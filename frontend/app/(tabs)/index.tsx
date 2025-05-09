@@ -1,48 +1,76 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 
-const deliveries = [
-  {
-    id: '126',
-    time: '2 часа',
-    distance: '2 км',
-    fragile: true,
-    package: 'Пакет до 1 кг',
-    toClient: true,
-    statuses: ['Проведен', 'Исправно'],
-  },
-  {
-    id: '1265',
-    time: '2 часа',
-    distance: '2 км',
-    fragile: true,
-    package: 'Пакет до 1 кг',
-    toClient: true,
-    statuses: ['Исправно', 'В ожидании'],
-  },
-  {
-    id: '1264',
-    time: '2 часа',
-    distance: '2 км',
-    fragile: true,
-    package: 'Пакет до 1 кг',
-    toClient: true,
-    statuses: ['Проведен', 'Исправно'],
-  },
-];
+// Определение типа для доставки
+type Delivery = {
+  id: string;
+  time: string;
+  distance: string;
+  fragile: boolean;
+  package: string;
+  toClient: boolean;
+  statuses: string[];
+};
 
+// Цвета статусов
 const statusColors: Record<string, string> = {
   'Проведен': '#1B7F4C',
   'Исправно': '#18805B',
   'В ожидании': '#A06A1B',
 };
 
+// API URL
+const API_URL = 'http://localhost:8000';
+
 export default function DeliveriesScreen() {
   const router = useRouter();
+  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const renderItem = ({ item }: { item: typeof deliveries[0] }) => (
+  // Загрузка данных при монтировании компонента
+  useEffect(() => {
+    fetchDeliveries();
+  }, []);
+
+  // Функция для загрузки доставок из API
+  const fetchDeliveries = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/deliveries/`);
+      
+      if (!response.ok) {
+        throw new Error(`Ошибка HTTP: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Преобразование данных из API в формат, используемый в приложении
+      const formattedDeliveries = data.map((item: any) => ({
+        id: item.id.toString(),
+        time: item.estimated_time || '2 часа', // Предполагаемое поле или значение по умолчанию
+        distance: item.distance || '2 км',
+        fragile: item.is_fragile || false,
+        package: item.packaging_type || 'Пакет до 1 кг',
+        toClient: item.service_type === 'До клиента',
+        statuses: [
+          item.delivery_status || 'В ожидании',
+          item.tech_status || 'Исправно'
+        ],
+      }));
+      
+      setDeliveries(formattedDeliveries);
+    } catch (err) {
+      console.error('Ошибка при загрузке доставок:', err);
+      setError('Не удалось загрузить данные. Пожалуйста, попробуйте позже.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderItem = ({ item }: { item: Delivery }) => (
     <TouchableOpacity
       style={styles.item}
       activeOpacity={0.8}
@@ -116,14 +144,31 @@ export default function DeliveriesScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Deliveries List */}
-      <FlatList
-        data={deliveries}
-        keyExtractor={item => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={{ paddingBottom: 120 }}
-        ItemSeparatorComponent={() => <View style={styles.divider} />}
-      />
+      {/* Состояние загрузки */}
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#B2D0FF" />
+          <Text style={styles.loadingText}>Загрузка доставок...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchDeliveries}>
+            <Text style={styles.retryButtonText}>Повторить</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        /* Deliveries List */
+        <FlatList
+          data={deliveries}
+          keyExtractor={item => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          ItemSeparatorComponent={() => <View style={styles.divider} />}
+          refreshing={loading}
+          onRefresh={fetchDeliveries}
+        />
+      )}
 
       {/* Floating Action Button */}
       <TouchableOpacity style={styles.fab} onPress={() => router.push('/create')}>
