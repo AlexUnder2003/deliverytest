@@ -48,18 +48,26 @@ export default function DeliveriesScreen() {
       const data = await response.json();
       
       // Преобразование данных из API в формат, используемый в приложении
-      const formattedDeliveries = data.map((item: any) => ({
-        id: item.id.toString(),
-        time: item.estimated_time || '2 часа', // Предполагаемое поле или значение по умолчанию
-        distance: item.distance || '2 км',
-        fragile: item.is_fragile || false,
-        package: item.packaging_type || 'Пакет до 1 кг',
-        toClient: item.service_type === 'До клиента',
-        statuses: [
-          item.delivery_status || 'В ожидании',
-          item.tech_status || 'Исправно'
-        ],
-      }));
+      const formattedDeliveries = data.map((item: any) => {
+        // Расчет времени в пути
+        const dispatchDateTime = new Date(item.dispatch_datetime);
+        const deliveryDateTime = new Date(item.delivery_datetime);
+        const diffMinutes = Math.max(0, Math.round((deliveryDateTime.getTime() - dispatchDateTime.getTime()) / 60000));
+        const timeInTransit = `${Math.floor(diffMinutes / 60)}ч ${diffMinutes % 60}м`;
+        
+        return {
+          id: item.id.toString(),
+          time: timeInTransit,
+          distance: item.distance || '2 км',
+          fragile: item.cargo_type?.name === 'Хрупкий груз',
+          package: item.packaging?.name || 'Пакет до 1 кг',
+          toClient: item.services && item.services.some((s: any) => s.name === 'До клиента'),
+          statuses: [
+            item.status?.name || 'В ожидании',
+            item.technical_condition?.name || 'Исправно'
+          ],
+        };
+      });
       
       setDeliveries(formattedDeliveries);
     } catch (err) {

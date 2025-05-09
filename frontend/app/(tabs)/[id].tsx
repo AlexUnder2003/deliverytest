@@ -20,11 +20,14 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from 'react-native';
 
 /* ──────────────────────────────────────
    Константы
    ────────────────────────────────────── */
+const API_URL = 'http://localhost:8000/'; // Замените на ваш URL API
+
 const STATUS_OPTIONS = [
   { key: 'waiting', label: 'В ожидании', color: '#A06A1B' },
   { key: 'delivered', label: 'Доставлен', color: '#1B7F4C' },
@@ -59,27 +62,162 @@ export type Delivery = {
   comment: string;
 };
 
+
+
 /* ──────────────────────────────────────
-   Mock-API (замените реальным fetch)
+   API-запросы
    ────────────────────────────────────── */
 async function fetchDeliveryById(id: string): Promise<Delivery> {
-  return {
-    model: 'DX-100',
-    number: '123',
-    dispatchDate: '2025-05-08',
-    dispatchTime: '12:09',
-    deliveryDate: '2025-05-08',
-    deliveryTime: '20:09',
-    distance: '2 км',
-    mediaFile: 'отчет.pdf',
-    service: 'До клиента',
-    fragile: true,
-    status: { key: 'waiting', label: 'В ожидании', color: '#A06A1B' },
-    packaging: 'Пакет до 1 кг',
-    tech: { key: 'ok', label: 'Исправно', color: '#18805B' },
-    collectorName: 'Александр Иванов',
-    comment: '',
-  };
+  try {
+    const response = await fetch(`${API_URL}/deliveries/${id}/`);
+    
+    if (!response.ok) {
+      throw new Error(`Ошибка HTTP: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Преобразуем данные из формата API в формат, используемый в компоненте
+    // Извлекаем дату и время из полей datetime
+    const dispatchDateTime = new Date(data.dispatch_datetime);
+    const deliveryDateTime = new Date(data.delivery_datetime);
+    
+    // Получаем статус доставки
+    const deliveryStatus = getStatusByName(data.status?.name || 'В ожидании');
+    
+    // Получаем техническое состояние
+    const techStatus = getTechStatusByName(data.technical_condition?.name || 'Исправно');
+    
+    return {
+      model: data.transport_model?.number || 'Неизвестно',
+      number: data.transport_number || '',
+      dispatchDate: dispatchDateTime.toISOString().slice(0, 10),
+      dispatchTime: `${dispatchDateTime.getHours().toString().padStart(2, '0')}:${dispatchDateTime.getMinutes().toString().padStart(2, '0')}`,
+      deliveryDate: deliveryDateTime.toISOString().slice(0, 10),
+      deliveryTime: `${deliveryDateTime.getHours().toString().padStart(2, '0')}:${deliveryDateTime.getMinutes().toString().padStart(2, '0')}`,
+      distance: data.distance || '',
+      mediaFile: data.attachments ? data.attachments.split('/').pop() || 'файл.pdf' : 'Нет файла',
+      service: data.services && data.services.length > 0 ? data.services[0].name : '',
+      fragile: data.cargo_type?.name === 'Хрупкий груз',
+      status: deliveryStatus,
+      packaging: data.packaging?.name || '',
+      tech: techStatus,
+      collectorName: data.collector || '',
+      comment: data.comment || '',
+    };
+  } catch (error) {
+    console.error('Ошибка при загрузке доставки:', error);
+    Alert.alert('Ошибка', 'Не удалось загрузить данные о доставке');
+    return {
+      model: 'Ошибка загрузки',
+      number: '',
+      dispatchDate: new Date().toISOString().slice(0, 10),
+      dispatchTime: '00:00',
+      deliveryDate: new Date().toISOString().slice(0, 10),
+      deliveryTime: '00:00',
+      distance: '',
+      mediaFile: '',
+      service: '',
+      fragile: false,
+      status: STATUS_OPTIONS[0],
+      packaging: '',
+      tech: TECH_OPTIONS[0],
+      collectorName: '',
+      comment: 'Ошибка загрузки данных',
+    };
+  }
+}
+
+// Вспомогательные функции для преобразования данных
+function getStatusByName(name: string) {
+  switch (name) {
+    case 'Доставлен':
+      return STATUS_OPTIONS[1];
+    case 'В ожидании':
+    default:
+      return STATUS_OPTIONS[0];
+  }
+}
+
+function getTechStatusByName(name: string) {
+  switch (name) {
+    case 'Неисправно':
+      return TECH_OPTIONS[1];
+    case 'На ремонте':
+      return TECH_OPTIONS[2];
+    case 'Исправно':
+    default:
+      return TECH_OPTIONS[0];
+  }
+}
+
+// Функция для удаления доставки
+async function deleteDelivery(id: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_URL}/deliveries/${id}/`, {
+      method: 'DELETE',
+    });
+    
+    return response.ok;
+  } catch (error) {
+    console.error('Ошибка при удалении доставки:', error);
+    return false;
+  }
+}
+
+// Функция для обновления доставки
+async function updateDelivery(id: string, data: any): Promise<boolean> {
+  try {
+    // Подготовка данных для отправки на сервер
+    const apiData: any = { ...data };
+    
+    // Если нужно обновить статус доставки
+    if (data.status_key) {
+      // Получаем ID статуса по ключу
+      const statusResponse = await fetch(`${API_URL}/delivery-statuses/`);
+      if (statusResponse.ok) {
+        const statuses = await statusResponse.json();
+        const statusObj = statuses.find((s: any) => 
+          s.name === (data.status_key === 'delivered' ? 'Доставлен' : 'В ожидании')
+        );
+        if (statusObj) {
+          apiData.status_id = statusObj.id;
+        }
+        delete apiData.status_key;
+      }
+    }
+    
+    // Если нужно обновить техническое состояние
+    if (data.tech_key) {
+      // Получаем ID тех. состояния по ключу
+      const techResponse = await fetch(`${API_URL}/tech-statuses/`);
+      if (techResponse.ok) {
+        const techStatuses = await techResponse.json();
+        let techName = 'Исправно';
+        if (data.tech_key === 'faulty') techName = 'Неисправно';
+        if (data.tech_key === 'repair') techName = 'На ремонте';
+        
+        const techObj = techStatuses.find((t: any) => t.name === techName);
+        if (techObj) {
+          apiData.technical_condition_id = techObj.id;
+        }
+        delete apiData.tech_key;
+      }
+    }
+    
+    const response = await fetch(`${API_URL}/deliveries/${id}/`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(apiData),
+    });
+    
+    return response.ok;
+  } catch (error) {
+    console.error('Ошибка при обновлении доставки:', error);
+    return false;
+  }
 }
 
 /* ──────────────────────────────────────
@@ -153,12 +291,69 @@ export default function ViewDeliveryScreen() {
   const openComment = useCallback(() => setCommentIdx(0), []);
   const closeComment= useCallback(() => setCommentIdx(-1), []);
 
-  const onDelete = () => {
-  // Implement the logic to delete the delivery
-  console.log(`Deleting delivery with ID: ${id}`);
-  // You might want to navigate back or update the state after deletion
-  router.back();
-};
+  const onDelete = async () => {
+    if (!id) return;
+    
+    const success = await deleteDelivery(id);
+    if (success) {
+      Alert.alert('Успешно', 'Доставка удалена');
+      router.back();
+    } else {
+      Alert.alert('Ошибка', 'Не удалось удалить доставку');
+    }
+  };
+
+  const onSave = async () => {
+    if (!delivery || !id) return;
+    
+    // Преобразуем данные в формат API
+    const dispatchDateTime = new Date(
+      dispatchDate.getFullYear(), dispatchDate.getMonth(), dispatchDate.getDate(),
+      dispatchTime.getHours(), dispatchTime.getMinutes()
+    ).toISOString();
+    
+    const deliveryDateTime = new Date(
+      deliveryDate.getFullYear(), deliveryDate.getMonth(), deliveryDate.getDate(),
+      deliveryTime.getHours(), deliveryTime.getMinutes()
+    ).toISOString();
+    
+    const data = {
+      transport_number: number,
+      dispatch_datetime: dispatchDateTime,
+      delivery_datetime: deliveryDateTime,
+      distance: distance,
+      collector: collectorName,
+      comment: comment,
+      status_key: status.key,
+      tech_key: tech.key
+    };
+    
+    const success = await updateDelivery(id, data);
+    if (success) {
+      // Обновляем локальное состояние
+      setDelivery({
+        ...delivery,
+        model,
+        number,
+        dispatchDate: dispatchDate.toISOString().slice(0, 10),
+        dispatchTime: `${dispatchTime.getHours().toString().padStart(2, '0')}:${dispatchTime.getMinutes().toString().padStart(2, '0')}`,
+        deliveryDate: deliveryDate.toISOString().slice(0, 10),
+        deliveryTime: `${deliveryTime.getHours().toString().padStart(2, '0')}:${deliveryTime.getMinutes().toString().padStart(2, '0')}`,
+        distance,
+        service,
+        fragile,
+        status,
+        packaging,
+        tech,
+        collectorName,
+        comment,
+      });
+      setIsEditing(false);
+      Alert.alert('Успешно', 'Данные доставки обновлены');
+    } else {
+      Alert.alert('Ошибка', 'Не удалось обновить данные доставки');
+    }
+  };
 
   /* ───────────────────────────
      Эффекты
@@ -211,27 +406,6 @@ export default function ViewDeliveryScreen() {
     return `${Math.floor(mins / 60)}ч ${mins % 60}м`;
   };
 
-  const onSave = () => {
-    if (!delivery) return;
-    setDelivery({
-      ...delivery,
-      model,
-      number,
-      dispatchDate : dispatchDate.toISOString().slice(0, 10),
-      dispatchTime : `${dispatchTime.getHours().toString().padStart(2, '0')}:${dispatchTime.getMinutes().toString().padStart(2, '0')}`,
-      deliveryDate : deliveryDate.toISOString().slice(0, 10),
-      deliveryTime : `${deliveryTime.getHours().toString().padStart(2, '0')}:${deliveryTime.getMinutes().toString().padStart(2, '0')}`,
-      distance,
-      service,
-      fragile,
-      status,
-      packaging,
-      tech,
-      collectorName,
-      comment,
-    });
-    setIsEditing(false);
-  };
   
 
   /* ───────────────────────────
