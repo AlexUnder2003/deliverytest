@@ -1,0 +1,129 @@
+[
+    {
+      "model": "api.techstatus",
+      "pk": 1,
+      "fields": {
+        "name": "Новый"
+      }
+    },
+    {
+      "model": "api.techstatus",
+      "pk": 2,
+      "fields": {
+        "name": "Исправен"
+      }
+    },
+    {
+      "model": "api.techstatus",
+      "pk": 3,
+      "fields": {
+        "name": "На ремонте"
+      }
+    },
+    {
+      "model": "api.packagingtype",
+      "pk": 1,
+      "fields": {
+        "name": "Контейнер"
+      }
+    },
+    {
+      "model": "api.packagingtype",
+      "pk": 2,
+      "fields": {
+        "name": "Ящик"
+      }
+    },
+    {
+      "model": "api.packagingtype",
+      "pk": 3,
+      "fields": {
+        "name": "Пакет"
+      }
+    },
+    {
+      "model": "api.service",
+      "pk": 1,
+      "fields": {
+        "name": "Доставка"
+      }
+    },
+    {
+      "model": "api.service",
+      "pk": 2,
+      "fields": {
+        "name": "Оформление документов"
+      }
+    },
+    {
+      "model": "api.service",
+      "pk": 3,
+      "fields": {
+        "name": "Упаковка"
+      }
+    },
+    {
+      "model": "api.deliverystatus",
+      "pk": 1,
+      "fields": {
+        "name": "Ожидает"
+      }
+    },
+    {
+      "model": "api.deliverystatus",
+      "pk": 2,
+      "fields": {
+        "name": "В пути"
+      }
+    },
+    {
+      "model": "api.deliverystatus",
+      "pk": 3,
+      "fields": {
+        "name": "Доставлено"
+      }
+    },
+    {
+      "model": "api.cargotype",
+      "pk": 1,
+      "fields": {
+        "name": "Опасный груз"
+      }
+    },
+    {
+      "model": "api.cargotype",
+      "pk": 2,
+      "fields": {
+        "name": "Сыпучий груз"
+      }
+    },
+    {
+      "model": "api.cargotype",
+      "pk": 3,
+      "fields": {
+        "name": "Жидкость"
+      }
+    },
+    {
+      "model": "api.transportmodel",
+      "pk": 1,
+      "fields": {
+        "number": "ABC-123"
+      }
+    },
+    {
+      "model": "api.transportmodel",
+      "pk": 2,
+      "fields": {
+        "number": "XYZ-789"
+      }
+    },
+    {
+      "model": "api.transportmodel",
+      "pk": 3,
+      "fields": {
+        "number": "TRA-456"
+      }
+    }
+  ]
+  
