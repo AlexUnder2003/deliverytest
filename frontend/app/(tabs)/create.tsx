@@ -15,6 +15,8 @@ import {
 import CourierSheet from '@/components/bottom-sheets/CourierSheet';
 import StatusSheet from '@/components/bottom-sheets/StatusSheet';
 import TextInputSheet from '@/components/bottom-sheets/TextInputSheet';
+import { Alert } from 'react-native';
+import { deliveryApi } from '@/services/api';
 
 const Divider = () => <View style={styles.divider} />;
 
@@ -100,6 +102,69 @@ export default function CreateDeliveryScreen() {
     );
     const diff = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
     return `${Math.floor(diff / 60)}ч ${diff % 60}м`;
+  };
+
+  // Функция для создания доставки
+  const handleCreateDelivery = async () => {
+    // Проверка обязательных полей
+    if (!selectedModel || !number) {
+      Alert.alert('Ошибка', 'Пожалуйста, выберите модель и номер курьера');
+      return;
+    }
+
+    // Преобразуем даты в формат API
+    const dispatchDateTime = new Date(
+      dispatchDate.getFullYear(), 
+      dispatchDate.getMonth(), 
+      dispatchDate.getDate(),
+      dispatchTime.getHours(), 
+      dispatchTime.getMinutes()
+    ).toISOString();
+    
+    const deliveryDateTime = new Date(
+      deliveryDate.getFullYear(), 
+      deliveryDate.getMonth(), 
+      deliveryDate.getDate(),
+      deliveryTime.getHours(), 
+      deliveryTime.getMinutes()
+    ).toISOString();
+
+    // Подготовка данных для отправки
+    const deliveryData = {
+      transport_model: selectedModel,
+      transport_number: number,
+      dispatch_datetime: dispatchDateTime,
+      delivery_datetime: deliveryDateTime,
+      distance: distance,
+      service: params.service || '',
+      packaging: params.packaging || '',
+      status_key: status.key,
+      tech_key: tech.key,
+      collector: fio,
+      comment: comment
+    };
+
+    try {
+      // Отображаем индикатор загрузки
+      Alert.alert('Создание доставки', 'Пожалуйста, подождите...');
+      
+      // Отправляем данные на сервер
+      const success = await deliveryApi.createDelivery(deliveryData);
+      
+      if (success) {
+        Alert.alert('Успешно', 'Доставка успешно создана', [
+          { 
+            text: 'OK', 
+            onPress: () => router.replace('/(tabs)/') 
+          }
+        ]);
+      } else {
+        Alert.alert('Ошибка', 'Не удалось создать доставку. Пожалуйста, попробуйте еще раз.');
+      }
+    } catch (error) {
+      console.error('Ошибка при создании доставки:', error);
+      Alert.alert('Ошибка', 'Произошла ошибка при создании доставки');
+    }
   };
 
   return (
@@ -279,9 +344,7 @@ export default function CreateDeliveryScreen() {
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.createBtnModal}
-          onPress={() => {
-            // TODO: отправка данных на сервер
-          }}
+          onPress={handleCreateDelivery}
         >
           <Text style={styles.createBtnTextModal}>Создать доставку</Text>
         </TouchableOpacity>

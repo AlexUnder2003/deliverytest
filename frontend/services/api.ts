@@ -76,6 +76,21 @@ export function getTechStatusByName(name: string) {
   }
 }
 
+// Типы для справочников
+export type ServiceItem = {
+  id: number;
+  key: string;
+  title: string;
+  subtitle?: string;
+  withButton?: boolean;
+};
+
+export type PackagingItem = {
+  id: number;
+  key: string;
+  title: string;
+};
+
 // API-запросы
 export const deliveryApi = {
   // Получение списка доставок
@@ -234,6 +249,41 @@ export const deliveryApi = {
     } catch (error) {
       console.error('Ошибка при создании доставки:', error);
       return false;
+    }
+  },
+
+  // Получение списка услуг
+  async getServices(): Promise<ServiceItem[]> {
+    try {
+      const response = await api.get('/services/');
+      
+      // Преобразование данных из API в формат, используемый в приложении
+      return response.data.map((item: any) => ({
+        id: item.id,
+        key: `service-${item.id}`,
+        title: item.name,
+        subtitle: '8 позиций', // Можно заменить на реальные данные, если они доступны
+      }));
+    } catch (error) {
+      console.error('Ошибка при загрузке услуг:', error);
+      throw new Error('Не удалось загрузить список услуг. Пожалуйста, попробуйте позже.');
+    }
+  },
+
+  // Получение списка типов упаковки
+  async getPackagingTypes(): Promise<PackagingItem[]> {
+    try {
+      const response = await api.get('/packaging-types/');
+      
+      // Преобразование данных из API в формат, используемый в приложении
+      return response.data.map((item: any) => ({
+        id: item.id,
+        key: `packaging-${item.id}`,
+        title: item.name,
+      }));
+    } catch (error) {
+      console.error('Ошибка при загрузке типов упаковки:', error);
+      throw new Error('Не удалось загрузить типы упаковки. Пожалуйста, попробуйте позже.');
     }
   }
 };

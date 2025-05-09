@@ -2,8 +2,9 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   FlatList,
   Platform,
@@ -12,18 +13,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { deliveryApi, ServiceItem } from '@/services/api';
 
-const SERVICES = [
-  { key: 'to-client', title: 'До клиента', subtitle: '8 позиций' },
-  { key: 'between-stores', title: 'Перемещение между складами', subtitle: '8 позиций' },
-  { key: 'individual', title: 'Физ.лицо', subtitle: '8 items' },
-  { key: 'legal', title: 'Юр.лицо', subtitle: '8 позиции' },
-  { key: 'documents', title: 'Документы', subtitle: '8 позиции' },
-  { key: 'medical', title: 'Мед.товары', subtitle: '8 позиции' },
-  { key: 'special', title: 'Особые товары', subtitle: '8 позиции' },
-  { key: 'other', title: 'Другое', subtitle: '8 позиции' },
-  { key: 'temp-mode', title: 'Температурный режим', subtitle: '', withButton: true },
-  { key: 'fragile', title: 'Хрупкий груз', subtitle: '', withButton: true },
+// Резервные данные на случай ошибки загрузки
+const FALLBACK_SERVICES = [
+  { id: 1, key: 'to-client', title: 'До клиента', subtitle: '8 позиций' },
+  { id: 2, key: 'between-stores', title: 'Перемещение между складами', subtitle: '8 позиций' },
 ];
 
 const numColumns = 2;
@@ -32,6 +27,10 @@ const ITEM_WIDTH = (width - 16 * 3) / numColumns;
 
 export default function ServicesMenuScreen() {
   const router = useRouter();
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
   type Params = {
     returnTo?: string;     // куда вернуться
     id?: string;           // если редактируем существующую запись
@@ -40,7 +39,28 @@ export default function ServicesMenuScreen() {
   
   const params = useLocalSearchParams<Params>();
 
-  const onSelect = (item: typeof SERVICES[0]) => {
+  // Загрузка данных при монтировании компонента
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  // Функция для загрузки услуг из API
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      const data = await deliveryApi.getServices();
+      setServices(data);
+      setError(null);
+    } catch (err) {
+      console.error('Ошибка при загрузке услуг:', err);
+      setError('Не удалось загрузить данные. Пожалуйста, попробуйте позже.');
+      setServices(FALLBACK_SERVICES);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onSelect = (item: ServiceItem) => {
     const { returnTo, id, ...rest } = params;
   
     router.replace({
@@ -73,7 +93,7 @@ export default function ServicesMenuScreen() {
     }
   };
 
-  const renderItem = ({ item }: { item: typeof SERVICES[0] }) => (
+  const renderItem = ({ item }: { item: ServiceItem }) => (
     <TouchableOpacity
       style={styles.card}
       onPress={() => onSelect(item)}
@@ -103,15 +123,31 @@ export default function ServicesMenuScreen() {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={SERVICES}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.key}
-        numColumns={numColumns}
-        contentContainerStyle={styles.list}
-        columnWrapperStyle={styles.row}
-        showsVerticalScrollIndicator={false}
-      />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#B2D0FF" />
+          <Text style={styles.loadingText}>Загрузка услуг...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchServices}>
+            <Text style={styles.retryButtonText}>Повторить</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={services}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.key}
+          numColumns={numColumns}
+          contentContainerStyle={styles.list}
+          columnWrapperStyle={styles.row}
+          showsVerticalScrollIndicator={false}
+          refreshing={loading}
+          onRefresh={fetchServices}
+        />
+      )}
     </View>
   );
 }
@@ -169,5 +205,34 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 14,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#fff',
+    marginTop: 12,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  errorText: {
+    color: '#ff6b6b',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#35363B',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+  },
+  retryButtonText: {
+    color: '#fff',
   },
 });
