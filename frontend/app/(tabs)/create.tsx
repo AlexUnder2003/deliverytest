@@ -10,22 +10,24 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native';
 
 import CourierSheet from '@/components/bottom-sheets/CourierSheet';
 import StatusSheet from '@/components/bottom-sheets/StatusSheet';
 import TextInputSheet from '@/components/bottom-sheets/TextInputSheet';
 import { Alert } from 'react-native';
-import { deliveryApi } from '@/services/api';
+import { deliveryApi, StatusOption, TransportModel } from '@/services/api';
 
 const Divider = () => <View style={styles.divider} />;
 
-const STATUS_OPTIONS = [
+// Запасные данные на случай ошибки загрузки
+const FALLBACK_STATUS_OPTIONS = [
   { key: 'waiting', label: 'В ожидании', color: '#A06A1B' },
   { key: 'delivered', label: 'Доставлен', color: '#1B7F4C' },
 ];
 
-const TECH_OPTIONS = [
+const FALLBACK_TECH_OPTIONS = [
   { key: 'ok', label: 'Исправно', color: '#18805B' },
   { key: 'faulty', label: 'Неисправно', color: '#D32F2F' },
   { key: 'repair', label: 'На ремонте', color: '#D98D2B' },
@@ -44,8 +46,18 @@ export default function CreateDeliveryScreen() {
     packaging?: string;
   }>();
 
+  // Состояния для загрузки данных
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Справочники
+  const [transportModels, setTransportModels] = useState<TransportModel[]>([]);
+  const [statusOptions, setStatusOptions] = useState<StatusOption[]>(FALLBACK_STATUS_OPTIONS);
+  const [techOptions, setTechOptions] = useState<StatusOption[]>(FALLBACK_TECH_OPTIONS);
+
   // Courier
-  const [selectedModel, setSelectedModel] = useState('DX-100');
+  const [selectedModel, setSelectedModel] = useState('');
+  const [selectedModelName, setSelectedModelName] = useState('Выберите модель');
   const [number, setNumber] = useState('');
   const [courierSheetOpen, setCourierSheetOpen] = useState(false);
 
@@ -57,11 +69,11 @@ export default function CreateDeliveryScreen() {
   const [distance, setDistance] = useState('2 км');
 
   // Delivery status sheet
-  const [status, setStatus] = useState(STATUS_OPTIONS[0]);
+  const [status, setStatus] = useState<StatusOption>(FALLBACK_STATUS_OPTIONS[0]);
   const [statusSheetOpen, setStatusSheetOpen] = useState(false);
 
   // Tech condition sheet
-  const [tech, setTech] = useState(TECH_OPTIONS[0]);
+  const [tech, setTech] = useState<StatusOption>(FALLBACK_TECH_OPTIONS[0]);
   const [techSheetOpen, setTechSheetOpen] = useState(false);
 
   // FIO sheet
@@ -71,6 +83,50 @@ export default function CreateDeliveryScreen() {
   // Comment sheet
   const [comment, setComment] = useState('');
   const [commentSheetOpen, setCommentSheetOpen] = useState(false);
+
+  // Загрузка справочников при монтировании компонента
+  useEffect(() => {
+    fetchReferenceData();
+  }, []);
+
+  // Функция для загрузки всех справочников
+  const fetchReferenceData = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Загружаем все справочники параллельно
+      const [models, statuses, techStatuses] = await Promise.all([
+        deliveryApi.getTransportModels(),
+        deliveryApi.getDeliveryStatuses(),
+        deliveryApi.getTechStatuses(),
+      ]);
+      
+      setTransportModels(models);
+      setStatusOptions(statuses);
+      setTechOptions(techStatuses);
+      
+      // Устанавливаем начальные значения из загруженных данных
+      if (models.length > 0) {
+        setSelectedModel(models[0].key);
+        setSelectedModelName(models[0].name);
+      }
+      
+      if (statuses.length > 0) {
+        setStatus(statuses[0]);
+      }
+      
+      if (techStatuses.length > 0) {
+        setTech(techStatuses[0]);
+      }
+      
+    } catch (err) {
+      console.error('Ошибка при загрузке справочников:', err);
+      setError('Не удалось загрузить справочные данные. Используются значения по умолчанию.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Init from params (для дат/времени)
   useEffect(() => {
@@ -102,6 +158,15 @@ export default function CreateDeliveryScreen() {
     );
     const diff = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
     return `${Math.floor(diff / 60)}ч ${diff % 60}м`;
+  };
+
+  // Обработчик выбора модели транспорта
+  const handleModelSelect = (modelKey: string) => {
+    setSelectedModel(modelKey);
+    const selectedModelObj = transportModels.find(model => model.key === modelKey);
+    if (selectedModelObj) {
+      setSelectedModelName(selectedModelObj.name);
+    }
   };
 
   // Функция для создания доставки
@@ -167,8 +232,27 @@ export default function CreateDeliveryScreen() {
     }
   };
 
+  // Если данные загружаются, показываем индикатор загрузки
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#B2D0FF" />
+        <Text style={styles.loadingText}>Загрузка данных...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
+      {error && (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity onPress={fetchReferenceData}>
+            <Text style={styles.retryText}>Повторить</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.headerRow}>
@@ -183,7 +267,9 @@ export default function CreateDeliveryScreen() {
         <Text style={styles.sectionLabel}>КУРЬЕР</Text>
         <TouchableOpacity style={styles.row} onPress={() => setCourierSheetOpen(true)}>
           <Ionicons name="cart-outline" size={20} color="#fff" style={styles.rowIcon} />
-          <Text style={styles.rowLabel}>{selectedModel}, №{number}</Text>
+          <Text style={styles.rowLabel}>
+            {selectedModel ? `${selectedModelName}, №${number || 'не указан'}` : 'Выберите модель и номер'}
+          </Text>
           <Ionicons name="chevron-forward" size={18} color="#fff" />
         </TouchableOpacity>
         <Divider />
@@ -353,7 +439,7 @@ export default function CreateDeliveryScreen() {
       {/* Bottom Sheets */}
       <StatusSheet
         title="Статус доставки"
-        options={STATUS_OPTIONS}
+        options={statusOptions}
         selectedOption={status}
         onSelect={setStatus}
         isOpen={statusSheetOpen}
@@ -362,7 +448,7 @@ export default function CreateDeliveryScreen() {
 
       <StatusSheet
         title="Тех. исправность"
-        options={TECH_OPTIONS}
+        options={techOptions}
         selectedOption={tech}
         onSelect={setTech}
         isOpen={techSheetOpen}
@@ -370,9 +456,10 @@ export default function CreateDeliveryScreen() {
       />
 
       <CourierSheet
+        models={transportModels}
         selectedModel={selectedModel}
         number={number}
-        onModelChange={setSelectedModel}
+        onModelChange={handleModelSelect}
         onNumberChange={setNumber}
         isOpen={courierSheetOpen}
         onClose={() => setCourierSheetOpen(false)}

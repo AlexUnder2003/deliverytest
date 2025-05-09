@@ -41,7 +41,20 @@ export type DeliveryListItem = {
   statuses: string[];
 };
 
-// Константы для статусов
+// Типы для статусов и технических состояний
+export type StatusOption = {
+  key: string;
+  label: string;
+  color: string;
+};
+
+export type TransportModel = {
+  id: number;
+  key: string;
+  name: string;
+};
+
+// Константы для статусов (используются как запасные данные)
 export const STATUS_OPTIONS = [
   { key: 'waiting', label: 'В ожидании', color: '#A06A1B' },
   { key: 'delivered', label: 'Доставлен', color: '#1B7F4C' },
@@ -238,6 +251,58 @@ export const deliveryApi = {
     } catch (error) {
       console.error('Ошибка при обновлении доставки:', error);
       return false;
+    }
+  },
+
+  // Получение списка моделей транспорта
+  async getTransportModels(): Promise<TransportModel[]> {
+    try {
+      const response = await api.get('/transport-models/');
+      return response.data.map((item: any) => ({
+        id: item.id,
+        key: item.id.toString(),
+        name: item.number || 'Модель без номера',
+      }));
+    } catch (error) {
+      console.error('Ошибка при загрузке моделей транспорта:', error);
+      // Возвращаем запасные данные в случае ошибки
+      return [
+        { id: 1, key: 'dx-100', name: 'DX-100' },
+        { id: 2, key: 'dx-200', name: 'DX-200' },
+        { id: 3, key: 'rx-300', name: 'RX-300' },
+      ];
+    }
+  },
+
+  // Получение статусов доставки
+  async getDeliveryStatuses(): Promise<StatusOption[]> {
+    try {
+      const response = await api.get('/delivery-statuses/');
+      return response.data.map((item: any) => ({
+        key: item.key || item.id.toString(),
+        label: item.name,
+        color: item.color || '#A06A1B',
+      }));
+    } catch (error) {
+      console.error('Ошибка при загрузке статусов доставки:', error);
+      // Возвращаем запасные данные в случае ошибки
+      return [...STATUS_OPTIONS];
+    }
+  },
+
+  // Получение технических состояний
+  async getTechStatuses(): Promise<StatusOption[]> {
+    try {
+      const response = await api.get('/tech-statuses/');
+      return response.data.map((item: any) => ({
+        key: item.key || item.id.toString(),
+        label: item.name,
+        color: item.color || '#18805B',
+      }));
+    } catch (error) {
+      console.error('Ошибка при загрузке технических состояний:', error);
+      // Возвращаем запасные данные в случае ошибки
+      return [...TECH_OPTIONS];
     }
   },
 
