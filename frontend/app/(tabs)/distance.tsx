@@ -28,6 +28,13 @@ export default function DistanceScreen() {
   const [to,        setTo]        = useState(params.to        ?? '');
   const [distance,  setDistance]  = useState(params.distance  ?? '');
 
+  // Функция для валидации ввода - только цифры
+  const handleDistanceChange = (text: string) => {
+    // Удаляем все нецифровые символы
+    const numericValue = text.replace(/[^0-9]/g, '');
+    setDistance(numericValue);
+  };
+
   const onApply = () => {
     const targetPath = params.returnTo ?? '/(tabs)/create';   // fallback
 
@@ -42,6 +49,22 @@ export default function DistanceScreen() {
     });
   };
 
+  // Обработчик нажатия кнопки "назад"
+  const handleGoBack = () => {
+    // Используем returnTo параметр, если он есть, иначе используем стандартный back()
+    if (params.returnTo) {
+      router.replace({
+        pathname: params.returnTo,
+        params: {
+          ...(params.returnId ? { id: params.returnId } : {}),
+          // Не передаем обновленные значения, так как пользователь не нажал "Применить"
+        },
+      });
+    } else {
+      router.back();
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -49,7 +72,7 @@ export default function DistanceScreen() {
     >
       {/* Header */}
       <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={handleGoBack}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.title}>Адреса и координаты</Text>
@@ -62,7 +85,7 @@ export default function DistanceScreen() {
           <TextInput
             style={styles.input}
             value={distance}
-            onChangeText={setDistance}
+            onChangeText={handleDistanceChange}
             placeholder="например, 2 км"
             placeholderTextColor="#888"
             keyboardType="numeric"

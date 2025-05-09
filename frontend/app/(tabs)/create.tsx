@@ -1,18 +1,20 @@
 // app/(tabs)/create.tsx
 
 import { Ionicons } from '@expo/vector-icons';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+
+import CourierSheet from '@/components/bottom-sheets/CourierSheet';
+import StatusSheet from '@/components/bottom-sheets/StatusSheet';
+import TextInputSheet from '@/components/bottom-sheets/TextInputSheet';
 
 const Divider = () => <View style={styles.divider} />;
 
@@ -35,11 +37,15 @@ export default function CreateDeliveryScreen() {
     deliveryDate?: string;
     deliveryTime?: string;
     id?: string;
+    distance?: string;
+    service?: string;
+    packaging?: string;
   }>();
 
   // Courier
   const [selectedModel, setSelectedModel] = useState('DX-100');
   const [number, setNumber] = useState('');
+  const [courierSheetOpen, setCourierSheetOpen] = useState(false);
 
   // Transit-time
   const [dispatchDate, setDispatchDate] = useState(new Date());
@@ -50,26 +56,19 @@ export default function CreateDeliveryScreen() {
 
   // Delivery status sheet
   const [status, setStatus] = useState(STATUS_OPTIONS[0]);
-  const statusRef = useRef<BottomSheet>(null);
-  const snapStatus = useMemo(() => ['30%'] as const, []);
-  const [statusIndex, setStatusIndex] = useState(-1);
-  const openStatus = useCallback(() => setStatusIndex(0), []);
-  const closeStatus = useCallback(() => setStatusIndex(-1), []);
+  const [statusSheetOpen, setStatusSheetOpen] = useState(false);
 
   // Tech condition sheet
   const [tech, setTech] = useState(TECH_OPTIONS[0]);
-  const techRef = useRef<BottomSheet>(null);
-  const snapTech = useMemo(() => ['30%'] as const, []);
-  const [techIndex, setTechIndex] = useState(-1);
-  const openTech = useCallback(() => setTechIndex(0), []);
-  const closeTech = useCallback(() => setTechIndex(-1), []);
+  const [techSheetOpen, setTechSheetOpen] = useState(false);
 
-  // Courier sheet
-  const courierRef = useRef<BottomSheet>(null);
-  const snapCourier = useMemo(() => ['50%'] as const, []);
-  const [courierIndex, setCourierIndex] = useState(-1);
-  const openCourier = useCallback(() => setCourierIndex(0), []);
-  const closeCourier = useCallback(() => setCourierIndex(-1), []);
+  // FIO sheet
+  const [fio, setFio] = useState('');
+  const [fioSheetOpen, setFioSheetOpen] = useState(false);
+
+  // Comment sheet
+  const [comment, setComment] = useState('');
+  const [commentSheetOpen, setCommentSheetOpen] = useState(false);
 
   // Init from params (для дат/времени)
   useEffect(() => {
@@ -82,22 +81,6 @@ export default function CreateDeliveryScreen() {
   useEffect(() => {
     if (params.distance) setDistance(params.distance);
   }, [params.distance]);
-
-  // FIO sheet
-  const [fio, setFio] = useState('');
-  const fioRef = useRef<BottomSheet>(null);
-  const snapFio = useMemo(() => ['30%'] as const, []);
-  const [fioIndex, setFioIndex] = useState(-1);
-  const openFio = useCallback(() => setFioIndex(0), []);
-  const closeFio = useCallback(() => setFioIndex(-1), []);
-
-  // Comment sheet
-  const [comment, setComment] = useState('');
-  const commentRef = useRef<BottomSheet>(null);
-  const snapComment = useMemo(() => ['40%'] as const, []);
-  const [commentIndex, setCommentIndex] = useState(-1);
-  const openComment = useCallback(() => setCommentIndex(0), []);
-  const closeComment = useCallback(() => setCommentIndex(-1), []);
 
   // Calculate transit
   const renderTransit = () => {
@@ -133,7 +116,7 @@ export default function CreateDeliveryScreen() {
 
         {/* Courier */}
         <Text style={styles.sectionLabel}>КУРЬЕР</Text>
-        <TouchableOpacity style={styles.row} onPress={openCourier}>
+        <TouchableOpacity style={styles.row} onPress={() => setCourierSheetOpen(true)}>
           <Ionicons name="cart-outline" size={20} color="#fff" style={styles.rowIcon} />
           <Text style={styles.rowLabel}>{selectedModel}, №{number}</Text>
           <Ionicons name="chevron-forward" size={18} color="#fff" />
@@ -229,7 +212,7 @@ export default function CreateDeliveryScreen() {
         <Divider />
 
         {/* Delivery Status */}
-        <TouchableOpacity style={styles.row} onPress={openStatus}>
+        <TouchableOpacity style={styles.row} onPress={() => setStatusSheetOpen(true)}>
           <Ionicons name="reload-outline" size={20} color="#fff" style={styles.rowIcon} />
           <Text style={styles.rowLabel}>Статус доставки</Text>
           <View style={styles.rowContent}>
@@ -262,7 +245,7 @@ export default function CreateDeliveryScreen() {
         <Divider />
 
         {/* Tech Condition */}
-        <TouchableOpacity style={styles.row} onPress={openTech}>
+        <TouchableOpacity style={styles.row} onPress={() => setTechSheetOpen(true)}>
           <Ionicons name="settings-outline" size={20} color="#fff" style={styles.rowIcon} />
           <Text style={styles.rowLabel}>Техническое состояние</Text>
           <View style={styles.rowContent}>
@@ -276,7 +259,7 @@ export default function CreateDeliveryScreen() {
 
         {/* FIO */}
         <Text style={styles.sectionLabel}>СБОРЩИК</Text>
-        <TouchableOpacity style={styles.row} onPress={openFio}>
+        <TouchableOpacity style={styles.row} onPress={() => setFioSheetOpen(true)}>
           <Ionicons name="person-outline" size={20} color="#fff" style={styles.rowIcon} />
           <Text style={styles.rowLabel}>{fio || 'Выбрать ФИО'}</Text>
           <Ionicons name="chevron-forward" size={18} color="#fff" />
@@ -284,7 +267,7 @@ export default function CreateDeliveryScreen() {
         <Divider />
 
         {/* Comment */}
-        <TouchableOpacity style={styles.row} onPress={openComment}>
+        <TouchableOpacity style={styles.row} onPress={() => setCommentSheetOpen(true)}>
           <Ionicons name="chatbubble-outline" size={20} color="#fff" style={styles.rowIcon} />
           <Text style={styles.rowLabel}>{comment || 'Добавить комментарий'}</Text>
           <Ionicons name="chevron-forward" size={18} color="#fff" />
@@ -303,154 +286,54 @@ export default function CreateDeliveryScreen() {
           <Text style={styles.createBtnTextModal}>Создать доставку</Text>
         </TouchableOpacity>
       </View>
-      {/* Status Sheet */}
-      <BottomSheet
-        ref={statusRef}
-        index={statusIndex}
-        snapPoints={snapStatus}
-        onChange={setStatusIndex}
-        enablePanDownToClose
-        backgroundStyle={{ backgroundColor: '#23262B' }}
-        handleIndicatorStyle={{ backgroundColor: '#444' }}
-      >
-        <BottomSheetView style={styles.sheetContent}>
-          <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>Статус доставки</Text>
-            <TouchableOpacity>
-              <Ionicons name="search" size={18} color="#888" />
-            </TouchableOpacity>
-          </View>
-          {STATUS_OPTIONS.map((opt) => (
-            <TouchableOpacity
-              key={opt.key}
-              style={styles.statusOption}
-              onPress={() => { setStatus(opt); closeStatus(); }}
-            >
-              <View style={[styles.badgeSmall, { backgroundColor: opt.color }]} />
-              <Text style={[styles.statusLabel, opt.key === status.key && styles.statusSelected]}>{opt.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </BottomSheetView>
-      </BottomSheet>
 
-      {/* Tech Sheet */}
-      <BottomSheet
-        ref={techRef}
-        index={techIndex}
-        snapPoints={snapTech}
-        onChange={setTechIndex}
-        enablePanDownToClose
-        backgroundStyle={{ backgroundColor: '#23262B' }}
-        handleIndicatorStyle={{ backgroundColor: '#444' }}
-      >
-        <BottomSheetView style={styles.sheetContent}>
-          <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>Тех. исправность</Text>
-            <TouchableOpacity>
-              <Ionicons name="search" size={18} color="#888" />
-            </TouchableOpacity>
-          </View>
-          {TECH_OPTIONS.map((opt) => (
-            <TouchableOpacity
-              key={opt.key}
-              style={styles.statusOption}
-              onPress={() => { setTech(opt); closeTech(); }}
-            >
-              <View style={[styles.badgeSmall, { backgroundColor: opt.color }]} />
-              <Text style={[styles.statusLabel, opt.key === tech.key && styles.statusSelected]}>{opt.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </BottomSheetView>
-      </BottomSheet>
+      {/* Bottom Sheets */}
+      <StatusSheet
+        title="Статус доставки"
+        options={STATUS_OPTIONS}
+        selectedOption={status}
+        onSelect={setStatus}
+        isOpen={statusSheetOpen}
+        onClose={() => setStatusSheetOpen(false)}
+      />
 
-      {/* Courier Sheet */}
-      <BottomSheet
-        ref={courierRef}
-        index={courierIndex}
-        snapPoints={snapCourier}
-        onChange={setCourierIndex}
-        enablePanDownToClose
-        backgroundStyle={{ backgroundColor: '#23262B' }}
-        handleIndicatorStyle={{ backgroundColor: '#444' }}
-      >
-        <BottomSheetView style={styles.sheetContent}>
-          <Text style={styles.sheetTitle}>Выберите модель и номер</Text>
-          <View style={styles.modelRow}>
-            {['DX-100', 'EAT-2000', 'NOM-7', 'YUM-42'].map((m) => (
-              <TouchableOpacity
-                key={m}
-                style={[styles.modelButton, selectedModel === m && styles.modelButtonSelected]}
-                onPress={() => setSelectedModel(m)}
-              >
-                <Text style={styles.modelText}>{m}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <Text style={styles.label}>Номер</Text>
-          <TextInput
-            style={styles.input}
-            value={number}
-            onChangeText={setNumber}
-            placeholder="Введите номер"
-            placeholderTextColor="#888"
-          />
-          <TouchableOpacity style={styles.button} onPress={closeCourier}>
-            <Text style={styles.buttonText}>Готово</Text>
-          </TouchableOpacity>
-        </BottomSheetView>
-      </BottomSheet>
+      <StatusSheet
+        title="Тех. исправность"
+        options={TECH_OPTIONS}
+        selectedOption={tech}
+        onSelect={setTech}
+        isOpen={techSheetOpen}
+        onClose={() => setTechSheetOpen(false)}
+      />
 
-      <BottomSheet
-        ref={fioRef}
-        index={fioIndex}
-        snapPoints={snapFio}
-        onChange={setFioIndex}
-        enablePanDownToClose
-        backgroundStyle={{ backgroundColor: '#23262B' }}
-        handleIndicatorStyle={{ backgroundColor: '#444' }}
-      >
-        <BottomSheetView style={styles.sheetContent}>
-          <Text style={styles.sheetTitle}>Выберите ФИО</Text>
-          <TextInput
-            style={styles.input}
-            value={fio}
-            onChangeText={setFio}
-            placeholder="Введите ФИО"
-            placeholderTextColor="#888"
-          />
-          <TouchableOpacity style={styles.button} onPress={closeFio}>
-            <Text style={styles.buttonText}>Готово</Text>
-          </TouchableOpacity>
-        </BottomSheetView>
-      </BottomSheet>
+      <CourierSheet
+        selectedModel={selectedModel}
+        number={number}
+        onModelChange={setSelectedModel}
+        onNumberChange={setNumber}
+        isOpen={courierSheetOpen}
+        onClose={() => setCourierSheetOpen(false)}
+      />
 
-      {/* Comment Sheet */}
-      <BottomSheet
-        ref={commentRef}
-        index={commentIndex}
-        snapPoints={snapComment}
-        onChange={setCommentIndex}
-        enablePanDownToClose
-        backgroundStyle={{ backgroundColor: '#23262B' }}
-        handleIndicatorStyle={{ backgroundColor: '#444' }}
-      >
-        <BottomSheetView style={styles.sheetContent}>
-          <Text style={styles.sheetTitle}>Комментарий</Text>
-          <TextInput
-            style={[styles.input, { height: 100 }]}
-            value={comment}
-            onChangeText={setComment}
-            placeholder="Введите комментарий"
-            placeholderTextColor="#888"
-            multiline
-          />
-          <TouchableOpacity style={styles.button} onPress={closeComment}>
-            <Text style={styles.buttonText}>Готово</Text>
-          </TouchableOpacity>
-        </BottomSheetView>
-      </BottomSheet>
-      </View>
+      <TextInputSheet
+        title="Выберите ФИО"
+        value={fio}
+        onValueChange={setFio}
+        isOpen={fioSheetOpen}
+        onClose={() => setFioSheetOpen(false)}
+        placeholder="Введите ФИО"
+      />
 
+      <TextInputSheet
+        title="Комментарий"
+        value={comment}
+        onValueChange={setComment}
+        isOpen={commentSheetOpen}
+        onClose={() => setCommentSheetOpen(false)}
+        placeholder="Введите комментарий"
+        multiline={true}
+      />
+    </View>
   );
 }
 
@@ -476,23 +359,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 160, // отступ снизу, чтобы контент не упирался в кнопку
   },
-  sheetContent: { flex: 1, padding: 16 },
-  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sheetTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  statusOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
-  statusLabel: { color: '#fff', flex: 1, fontSize: 16 },
-  statusSelected: { fontWeight: 'bold' },
   footer: {
     position: 'absolute', left: 0, right: 0, bottom: 40,
     backgroundColor: '#23262B', padding: 16,
   },
-
-  modelRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 },
-  modelButton: { borderWidth: 1, borderColor: '#35363B', borderRadius: 8, padding: 6, margin: 4 },
-  modelButtonSelected: { backgroundColor: '#35363B' },
-  modelText: { color: '#fff' },
-  label: { color: '#B2B2B2', marginBottom: 8 },
-  input: { backgroundColor: '#35363B', color: '#fff', borderRadius: 8, padding: 10, fontSize: 18, marginBottom: 16 },
-  button: { backgroundColor: '#18805B', borderRadius: 12, padding: 12, alignItems: 'center' },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 });

@@ -38,6 +38,26 @@ export default function PackagingScreen() {
     });
   };
 
+  // Обработчик нажатия кнопки "назад"
+  const handleGoBack = () => {
+    // Отладочный вывод для проверки параметров
+    console.log('Параметры при возврате:', JSON.stringify(params));
+    
+    // Проверяем наличие параметра returnTo
+    if (params.returnTo) {
+      // Сохраняем все параметры, кроме returnTo
+      const { returnTo, ...restParams } = params;
+      
+      router.replace({
+        pathname: returnTo,
+        params: restParams,
+      });
+    } else {
+      // Если параметр returnTo отсутствует, явно указываем путь возврата
+      router.replace('/(tabs)/create');
+    }
+  };
+
   const renderItem = ({ item }: { item: typeof ITEMS[0] }) => (
     <TouchableOpacity style={styles.card} onPress={() => onSelect(item.title)}>
       <Text style={styles.title}>{item.title}</Text>
@@ -51,8 +71,8 @@ export default function PackagingScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={24} color="#fff" />
+        <TouchableOpacity onPress={handleGoBack}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Упаковка</Text>
         <TouchableOpacity>

@@ -29,13 +29,25 @@ export default function FileManagerScreen() {
         copyToCacheDirectory: true,
       });
 
+      // Подробное логирование для отладки
+      console.log('DocumentPicker результат:', JSON.stringify(res));
+
+      // Проверка для новой версии API (массив assets)
       if (res.type === 'success' && Array.isArray(res.assets) && res.assets.length > 0) {
-        // Новая версия expo-document-picker возвращает массив assets
         const asset = res.assets[0];
+        console.log('Выбран документ:', asset.name, asset.uri);
         setFiles(prev => [...prev, { uri: asset.uri, name: asset.name }]);
-      } else if (res.type === 'cancel') {
-        // Пользователь отменил выбор
-      } else {
+      } 
+      // Проверка для старой версии API (без массива assets)
+      else if (res.type === 'success' && res.uri) {
+        console.log('Выбран документ (старый API):', res.name, res.uri);
+        setFiles(prev => [...prev, { uri: res.uri, name: res.name || 'Документ' }]);
+      } 
+      else if (res.type === 'cancel') {
+        console.log('Выбор документа отменен пользователем');
+      } 
+      else {
+        console.warn('Неизвестный результат DocumentPicker:', res);
         Alert.alert('Ошибка', 'Не удалось выбрать документ.');
       }
     } catch (e) {
