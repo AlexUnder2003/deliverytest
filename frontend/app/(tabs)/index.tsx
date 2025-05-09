@@ -3,16 +3,8 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 
-// Определение типа для доставки
-type Delivery = {
-  id: string;
-  time: string;
-  distance: string;
-  fragile: boolean;
-  package: string;
-  toClient: boolean;
-  statuses: string[];
-};
+// Импортируем API
+import { deliveryApi, DeliveryListItem } from '@/services/api';
 
 // Цвета статусов
 const statusColors: Record<string, string> = {
@@ -21,12 +13,9 @@ const statusColors: Record<string, string> = {
   'В ожидании': '#A06A1B',
 };
 
-// API URL
-const API_URL = 'http://localhost:8000';
-
 export default function DeliveriesScreen() {
   const router = useRouter();
-  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
+  const [deliveries, setDeliveries] = useState<DeliveryListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,37 +28,8 @@ export default function DeliveriesScreen() {
   const fetchDeliveries = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/deliveries/`);
-      
-      if (!response.ok) {
-        throw new Error(`Ошибка HTTP: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      // Преобразование данных из API в формат, используемый в приложении
-      const formattedDeliveries = data.map((item: any) => {
-        // Расчет времени в пути
-        const dispatchDateTime = new Date(item.dispatch_datetime);
-        const deliveryDateTime = new Date(item.delivery_datetime);
-        const diffMinutes = Math.max(0, Math.round((deliveryDateTime.getTime() - dispatchDateTime.getTime()) / 60000));
-        const timeInTransit = `${Math.floor(diffMinutes / 60)}ч ${diffMinutes % 60}м`;
-        
-        return {
-          id: item.id.toString(),
-          time: timeInTransit,
-          distance: item.distance || '2 км',
-          fragile: item.cargo_type?.name === 'Хрупкий груз',
-          package: item.packaging?.name || 'Пакет до 1 кг',
-          toClient: item.services && item.services.some((s: any) => s.name === 'До клиента'),
-          statuses: [
-            item.status?.name || 'В ожидании',
-            item.technical_condition?.name || 'Исправно'
-          ],
-        };
-      });
-      
-      setDeliveries(formattedDeliveries);
+      const data = await deliveryApi.getDeliveries();
+      setDeliveries(data);
     } catch (err) {
       console.error('Ошибка при загрузке доставок:', err);
       setError('Не удалось загрузить данные. Пожалуйста, попробуйте позже.');
@@ -78,7 +38,7 @@ export default function DeliveriesScreen() {
     }
   };
 
-  const renderItem = ({ item }: { item: Delivery }) => (
+  const renderItem = ({ item }: { item: DeliveryListItem }) => (
     <TouchableOpacity
       style={styles.item}
       activeOpacity={0.8}
