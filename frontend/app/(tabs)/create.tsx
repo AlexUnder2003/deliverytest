@@ -194,17 +194,38 @@ export default function CreateDeliveryScreen() {
       deliveryTime.getMinutes()
     ).toISOString();
 
+    // Находим ID модели транспорта
+    const modelObj = transportModels.find(model => model.key === selectedModel);
+    if (!modelObj) {
+      Alert.alert('Ошибка', 'Не удалось определить ID модели транспорта');
+      return;
+    }
+
+    // Находим ID статуса доставки
+    const statusObj = statusOptions.find(s => s.key === status.key);
+    if (!statusObj) {
+      Alert.alert('Ошибка', 'Не удалось определить ID статуса доставки');
+      return;
+    }
+
+    // Находим ID технического состояния
+    const techObj = techOptions.find(t => t.key === tech.key);
+    if (!techObj) {
+      Alert.alert('Ошибка', 'Не удалось определить ID технического состояния');
+      return;
+    }
+
     // Подготовка данных для отправки
     const deliveryData = {
-      transport_model: selectedModel,
+      transport_model_id: parseInt(modelObj.key), // Преобразуем в число, если key - это строка с числом
       transport_number: number,
       dispatch_datetime: dispatchDateTime,
       delivery_datetime: deliveryDateTime,
       distance: distance,
       service: params.service || '',
       packaging: params.packaging || '',
-      status_key: status.key,
-      tech_key: tech.key,
+      status_id: parseInt(statusObj.key), // Преобразуем в число, если key - это строка с числом
+      technical_condition_id: parseInt(techObj.key), // Преобразуем в число, если key - это строка с числом
       collector: fio,
       comment: comment
     };
