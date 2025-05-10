@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Alert } from 'react-native';
+import * as FileSystem from 'expo-file-system';
 
 // Константы
 export const API_URL = 'http://localhost:8000';
@@ -106,6 +107,65 @@ export type PackagingItem = {
 
 // API-запросы
 export const deliveryApi = {
+  // Загрузка файла на сервер
+  async uploadFile(fileUri: string, fileName: string): Promise<string> {
+    try {
+      // Проверяем существование файла
+      const fileInfo = await FileSystem.getInfoAsync(fileUri);
+      if (!fileInfo.exists) {
+        throw new Error('Файл не существует');
+      }
+
+      // Создаем FormData для отправки файла
+      const formData = new FormData();
+      formData.append('file', {
+        uri: fileUri,
+        name: fileName,
+        type: 'application/octet-stream', // Можно определить тип по расширению
+      } as any);
+
+      // Отправляем файл на сервер
+      const response = await axios.post(`${API_URL}/upload-file/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      // Возвращаем URL загруженного файла
+      return response.data.file_url;
+    } catch (error) {
+      console.error('Ошибка при загрузке файла:', error);
+      throw new Error('Не удалось загрузить файл. Пожалуйста, попробуйте позже.');
+    }
+  },
+
+  // Создание доставки с файлами
+  async createDeliveryWithFiles(deliveryData: any, files: Array<{ uri: string; name: string }>): Promise<any> {
+    try {
+      // Если есть файлы, загружаем их сначала
+      let attachmentsUrl = null;
+      
+      if (files && files.length > 0) {
+        // Для простоты берем только первый файл (можно модифицировать для поддержки нескольких)
+        const file = files[0];
+        attachmentsUrl = await this.uploadFile(file.uri, file.name);
+      }
+      
+      // Добавляем URL файла к данным доставки
+      const dataToSend = {
+        ...deliveryData,
+        attachments: attachmentsUrl,
+      };
+      
+      // Отправляем данные доставки
+      const response = await api.post('/deliveries/', dataToSend);
+      return response.data;
+    } catch (error) {
+      console.error('Ошибка при создании доставки с файлами:', error);
+      throw new Error('Не удалось создать доставку. Пожалуйста, попробуйте позже.');
+    }
+  },
+
   // Получение списка доставок
   async getDeliveries(): Promise<DeliveryListItem[]> {
     try {

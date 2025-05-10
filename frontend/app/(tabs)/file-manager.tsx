@@ -2,6 +2,7 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -39,7 +40,18 @@ export default function FileManagerScreen() {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingName, setEditingName] = useState<string>('');
 
-  // Launch document picker
+  // Функция для получения информации о файле
+  const getFileInfo = async (uri: string) => {
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(uri);
+      return fileInfo;
+    } catch (e) {
+      console.warn('Ошибка при получении информации о файле:', e);
+      return null;
+    }
+  };
+
+  // Launch document picker с улучшенной обработкой
   const addDocument = async () => {
     try {
       const res = await DocumentPicker.getDocumentAsync({
@@ -49,12 +61,28 @@ export default function FileManagerScreen() {
 
       if (!res.canceled) {
         if (Array.isArray(res.assets) && res.assets.length > 0) {
-          res.assets.forEach(asset => {
+          for (const asset of res.assets) {
+            // Получаем информацию о файле
+            const fileInfo = await getFileInfo(asset.uri);
             const name = asset.name ?? asset.uri.split('/').pop()!;
+            
+            // Проверяем размер файла (ограничение 10MB)
+            if (fileInfo && fileInfo.size && fileInfo.size > 10 * 1024 * 1024) {
+              Alert.alert('Ошибка', `Файл ${name} слишком большой. Максимальный размер 10MB.`);
+              continue;
+            }
+            
             setFiles(prev => [...prev, { uri: asset.uri, name }]);
-          });
+          }
         } else if (res.uri) {
+          const fileInfo = await getFileInfo(res.uri);
           const name = res.name ?? res.uri.split('/').pop()!;
+          
+          if (fileInfo && fileInfo.size && fileInfo.size > 10 * 1024 * 1024) {
+            Alert.alert('Ошибка', `Файл ${name} слишком большой. Максимальный размер 10MB.`);
+            return;
+          }
+          
           setFiles(prev => [...prev, { uri: res.uri, name }]);
         }
       }
