@@ -1,160 +1,200 @@
+// app/(tabs)/[id]/view.tsx
+
 import { Ionicons } from '@expo/vector-icons';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
-  useLocalSearchParams,
-  usePathname,
-  useRouter,
-} from 'expo-router';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import {
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
   Alert,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
 
-
-/* ──────────────────────────────────────
-   Константы
-   ────────────────────────────────────── */
-import { deliveryApi, Delivery, STATUS_OPTIONS, TECH_OPTIONS } from '@/services/api';
+import {
+  deliveryApi,
+  Delivery,
+  StatusOption as DeliveryStatus,
+  TransportModel,
+  StatusOption as TechStatus,
+} from '@/services/api';
+import StatusSheet from '@/components/bottom-sheets/StatusSheet';
+import TextInputSheet from '@/components/bottom-sheets/TextInputSheet';
+import CourierSheet from '@/components/bottom-sheets/CourierSheet';
 
 const Divider = () => <View style={styles.divider} />;
 
-/* ──────────────────────────────────────
-   Компонент
-   ────────────────────────────────────── */
 export default function ViewDeliveryScreen() {
-  /* роутинг-хуки */
-  const router     = useRouter();
-  const pathname   = usePathname();                // '/(tabs)/123'
-  const returnPath = pathname || '/(tabs)/create'; // запасной
-
-  /* query-параметры */
+  const router = useRouter();
+  const pathname = usePathname();
+  const returnPath = pathname || '/(tabs)/create';
   const {
     id,
-    distance:  qDistance,
-    service:   qService,
+    distance: qDistance,
+    service: qService,
     packaging: qPackaging,
-  } = useLocalSearchParams<{
-    id: string;
-    distance?: string;
-    service?: string;
-    packaging?: string;
-  }>();
+  } = useLocalSearchParams<{ id: string; distance?: string; service?: string; packaging?: string }>();
 
-  /* основное состояние */
+  // Reference data
+  const [loadingRefs, setLoadingRefs] = useState(true);
+  const [transportModels, setTransportModels] = useState<TransportModel[]>([]);
+  const [statusOptions, setStatusOptions] = useState<DeliveryStatus[]>([]);
+  const [techOptions, setTechOptions] = useState<TechStatus[]>([]);
+
+  // Delivery data
   const [delivery, setDelivery] = useState<Delivery | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  /* editable-поля */
-  const [model,         setModel]         = useState('');
-  const [number,        setNumber]        = useState('');
-  const [dispatchDate,  setDispatchDate]  = useState(new Date());
-  const [dispatchTime,  setDispatchTime]  = useState(new Date());
-  const [deliveryDate,  setDeliveryDate]  = useState(new Date());
-  const [deliveryTime,  setDeliveryTime]  = useState(new Date());
-  const [distance,      setDistance]      = useState('');
-  const [service,       setService]       = useState('');
-  const [fragile,       setFragile]       = useState(false);
-  const [status,        setStatus]        = useState<typeof STATUS_OPTIONS[number]>(STATUS_OPTIONS[0]);
-  const [packaging,     setPackaging]     = useState('');
-  const [tech,          setTech]          = useState<typeof TECH_OPTIONS[number]>(TECH_OPTIONS[0]);
+  // Editable fields
+  const [selectedModel, setSelectedModel] = useState('');
+  const [modelName, setModelName] = useState('');
+  const [number, setNumber] = useState('');
+  const [dispatchDate, setDispatchDate] = useState(new Date());
+  const [dispatchTime, setDispatchTime] = useState(new Date());
+  const [deliveryDate, setDeliveryDate] = useState(new Date());
+  const [deliveryTime, setDeliveryTime] = useState(new Date());
+  const [distance, setDistance] = useState('');
+  const [service, setService] = useState('');
+  const [packaging, setPackaging] = useState('');
+  const [status, setStatus] = useState<DeliveryStatus>({ key: '', label: '', color: '' });
+  const [tech, setTech] = useState<TechStatus>({ key: '', label: '', color: '' });
   const [collectorName, setCollectorName] = useState('');
-  const [comment,       setComment]       = useState('');
+  const [comment, setComment] = useState('');
 
-  /* bottom-sheet refs / индексы */
-  const statusRef   = useRef<BottomSheet>(null);
-  const techRef     = useRef<BottomSheet>(null);
-  const modelRef    = useRef<BottomSheet>(null);
-  const fioRef      = useRef<BottomSheet>(null);
-  const commentRef  = useRef<BottomSheet>(null);
+  // Bottom sheets
+  const [courierSheetOpen, setCourierSheetOpen] = useState(false);
+  const [statusSheetOpen, setStatusSheetOpen] = useState(false);
+  const [techSheetOpen, setTechSheetOpen] = useState(false);
+  const [fioSheetOpen, setFioSheetOpen] = useState(false);
+  const [commentSheetOpen, setCommentSheetOpen] = useState(false);
 
-  const snap30 = useMemo(() => ['30%'] as const, []);
-  const snap40 = useMemo(() => ['40%'] as const, []);
-  const snap50 = useMemo(() => ['50%'] as const, []);
+  // Load reference data
+  useEffect(() => {
+    (async () => {
+      try {
+        const [models, statuses, techs] = await Promise.all([
+          deliveryApi.getTransportModels(),
+          deliveryApi.getDeliveryStatuses(),
+          deliveryApi.getTechStatuses(),
+        ]);
+        setTransportModels(models);
+        setStatusOptions(statuses);
+        setTechOptions(techs);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingRefs(false);
+      }
+    })();
+  }, []);
 
-  const [statusIdx,  setStatusIdx]  = useState(-1);
-  const [techIdx,    setTechIdx]    = useState(-1);
-  const [modelIdx,   setModelIdx]   = useState(-1);
-  const [fioIdx,     setFioIdx]     = useState(-1);
-  const [commentIdx, setCommentIdx] = useState(-1);
-
-  /* helpers для открытия/закрытия */
-  const openStatus  = useCallback(() => setStatusIdx(0), []);
-  const closeStatus = useCallback(() => setStatusIdx(-1), []);
-  const openTech    = useCallback(() => setTechIdx(0), []);
-  const closeTech   = useCallback(() => setTechIdx(-1), []);
-  const openModel   = useCallback(() => setModelIdx(0), []);
-  const closeModel  = useCallback(() => setModelIdx(-1), []);
-  const openFio     = useCallback(() => setFioIdx(0), []);
-  const closeFio    = useCallback(() => setFioIdx(-1), []);
-  const openComment = useCallback(() => setCommentIdx(0), []);
-  const closeComment= useCallback(() => setCommentIdx(-1), []);
-
-  const onDelete = async () => {
+  // Load delivery
+  useEffect(() => {
     if (!id) return;
-    
-    const success = await deliveryApi.deleteDelivery(id);
-    if (success) {
-      Alert.alert('Успешно', 'Доставка удалена');
-      router.back();
-    } else {
-      Alert.alert('Ошибка', 'Не удалось удалить доставку');
-    }
+    deliveryApi.getDeliveryById(id).then(setDelivery);
+  }, [id]);
+
+  // Initialize fields when delivery arrives
+  useEffect(() => {
+    if (!delivery) return;
+    // Find model key by name
+    const modelObj = transportModels.find(m => m.name === delivery.model);
+    setSelectedModel(modelObj?.key ?? '');
+    setModelName(delivery.model);
+    setNumber(delivery.number);
+    setDispatchDate(new Date(delivery.dispatchDate));
+    setDispatchTime(new Date(`${delivery.dispatchDate}T${delivery.dispatchTime}`));
+    setDeliveryDate(new Date(delivery.deliveryDate));
+    setDeliveryTime(new Date(`${delivery.deliveryDate}T${delivery.deliveryTime}`));
+    setDistance(delivery.distance);
+    setService(delivery.service);
+    setPackaging(delivery.packaging);
+    setStatus(delivery.status);
+    setTech(delivery.tech);
+    setCollectorName(delivery.collectorName);
+    setComment(delivery.comment);
+  }, [delivery, transportModels]);
+
+  // Apply query params overrides
+  useEffect(() => {
+    if (qDistance) setDistance(qDistance);
+    if (qService) setService(qService);
+    if (qPackaging) setPackaging(qPackaging);
+  }, [qDistance, qService, qPackaging]);
+
+  const transitLabel = () => {
+    const start = new Date(
+      dispatchDate.getFullYear(),
+      dispatchDate.getMonth(),
+      dispatchDate.getDate(),
+      dispatchTime.getHours(),
+      dispatchTime.getMinutes()
+    );
+    const end = new Date(
+      deliveryDate.getFullYear(),
+      deliveryDate.getMonth(),
+      deliveryDate.getDate(),
+      deliveryTime.getHours(),
+      deliveryTime.getMinutes()
+    );
+    const mins = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+    return `${Math.floor(mins / 60)}ч ${mins % 60}м`;
   };
 
   const onSave = async () => {
     if (!delivery || !id) return;
-    
-    // Преобразуем данные в формат API
+
     const dispatchDateTime = new Date(
-      dispatchDate.getFullYear(), dispatchDate.getMonth(), dispatchDate.getDate(),
-      dispatchTime.getHours(), dispatchTime.getMinutes()
+      dispatchDate.getFullYear(),
+      dispatchDate.getMonth(),
+      dispatchDate.getDate(),
+      dispatchTime.getHours(),
+      dispatchTime.getMinutes()
     ).toISOString();
-    
     const deliveryDateTime = new Date(
-      deliveryDate.getFullYear(), deliveryDate.getMonth(), deliveryDate.getDate(),
-      deliveryTime.getHours(), deliveryTime.getMinutes()
+      deliveryDate.getFullYear(),
+      deliveryDate.getMonth(),
+      deliveryDate.getDate(),
+      deliveryTime.getHours(),
+      deliveryTime.getMinutes()
     ).toISOString();
-    
+
     const data = {
       transport_number: number,
       dispatch_datetime: dispatchDateTime,
       delivery_datetime: deliveryDateTime,
-      distance: distance,
-      collector: collectorName,
-      comment: comment,
+      distance,
+      service,
+      packaging,
       status_key: status.key,
-      tech_key: tech.key
+      tech_key: tech.key,
+      collector: collectorName,
+      comment,
     };
-    
+
     const success = await deliveryApi.updateDelivery(id, data);
     if (success) {
-      // Обновляем локальное состояние
       setDelivery({
         ...delivery,
-        model,
+        model: modelName,
         number,
         dispatchDate: dispatchDate.toISOString().slice(0, 10),
-        dispatchTime: `${dispatchTime.getHours().toString().padStart(2, '0')}:${dispatchTime.getMinutes().toString().padStart(2, '0')}`,
+        dispatchTime: `${dispatchTime.getHours().toString().padStart(2, '0')}:${dispatchTime
+          .getMinutes()
+          .toString()
+          .padStart(2, '0')}`,
         deliveryDate: deliveryDate.toISOString().slice(0, 10),
-        deliveryTime: `${deliveryTime.getHours().toString().padStart(2, '0')}:${deliveryTime.getMinutes().toString().padStart(2, '0')}`,
+        deliveryTime: `${deliveryTime.getHours().toString().padStart(2, '0')}:${deliveryTime
+          .getMinutes()
+          .toString()
+          .padStart(2, '0')}`,
         distance,
         service,
-        fragile,
-        status,
         packaging,
+        status,
         tech,
         collectorName,
         comment,
@@ -166,66 +206,22 @@ export default function ViewDeliveryScreen() {
     }
   };
 
-  /* ───────────────────────────
-     Эффекты
-     ─────────────────────────── */
-  /* получаем доставку */
-  useEffect(() => {
+  const onDelete = async () => {
     if (!id) return;
-    deliveryApi.getDeliveryById(id).then(setDelivery);
-  }, [id]);
-
-  /* применяем query-параметры из подэкранов */
-  useEffect(() => {
-    if (qDistance)  setDistance(qDistance);
-    if (qService)   setService(qService);
-    if (qPackaging) setPackaging(qPackaging);
-  }, [qDistance, qService, qPackaging]);
-
-  /* когда прилетела доставка — заполняем editable-поля */
-  useEffect(() => {
-    if (!delivery) return;
-    setModel(delivery.model);
-    setNumber(delivery.number);
-    setDispatchDate(new Date(delivery.dispatchDate));
-    setDispatchTime(new Date(`${delivery.dispatchDate}T${delivery.dispatchTime}`));
-    setDeliveryDate(new Date(delivery.deliveryDate));
-    setDeliveryTime(new Date(`${delivery.deliveryDate}T${delivery.deliveryTime}`));
-    setDistance(delivery.distance);
-    setService(delivery.service);
-    setFragile(delivery.fragile);
-    setStatus(delivery.status);
-    setPackaging(delivery.packaging);
-    setTech(delivery.tech);
-    setCollectorName(delivery.collectorName);
-    setComment(delivery.comment);
-  }, [delivery]);
-
-  /* ───────────────────────────
-     Вспомогательные функции
-     ─────────────────────────── */
-  const transitLabel = () => {
-    const start = new Date(
-      dispatchDate.getFullYear(), dispatchDate.getMonth(), dispatchDate.getDate(),
-      dispatchTime.getHours(),    dispatchTime.getMinutes()
-    );
-    const end = new Date(
-      deliveryDate.getFullYear(), deliveryDate.getMonth(), deliveryDate.getDate(),
-      deliveryTime.getHours(),    deliveryTime.getMinutes()
-    );
-    const mins = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
-    return `${Math.floor(mins / 60)}ч ${mins % 60}м`;
+    const success = await deliveryApi.deleteDelivery(id);
+    if (success) {
+      Alert.alert('Успешно', 'Доставка удалена');
+      router.back();
+    } else {
+      Alert.alert('Ошибка', 'Не удалось удалить доставку');
+    }
   };
 
-  
-
-  /* ───────────────────────────
-     Рендер
-     ─────────────────────────── */
-  if (!delivery) {
+  if (loadingRefs || !delivery) {
     return (
       <View style={styles.loading}>
-        <Text style={{ color: '#fff' }}>Загрузка…</Text>
+        <ActivityIndicator size="large" color="#B2D0FF" />
+        <Text style={styles.loadingText}>Загрузка...</Text>
       </View>
     );
   }
@@ -241,25 +237,28 @@ export default function ViewDeliveryScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      {/* Content */}
-      <Text style={styles.sectionLabel}>КУРЬЕР</Text>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Модель + номер */}
+        {/* Courier */}
+        <Text style={styles.sectionLabel}>КУРЬЕР</Text>
         {isEditing ? (
-          <TouchableOpacity style={styles.row} onPress={openModel}>
-            <Ionicons name="duplicate-outline" size={20} color="#fff" style={styles.rowIcon} />
-            <Text style={styles.rowLabel}>{model}, №{number}</Text>
+          <TouchableOpacity style={styles.row} onPress={() => setCourierSheetOpen(true)}>
+            <Ionicons name="cart-outline" size={20} color="#fff" style={styles.rowIcon} />
+            <Text style={styles.rowLabel}>
+              {modelName}, №{number}
+            </Text>
             <Ionicons name="chevron-forward" size={18} color="#fff" />
           </TouchableOpacity>
         ) : (
           <View style={styles.row}>
-            <Ionicons name="duplicate-outline" size={20} color="#fff" style={styles.rowIcon} />
-            <Text style={styles.rowLabel}>{delivery.model}, №{delivery.number}</Text>
+            <Ionicons name="cart-outline" size={20} color="#fff" style={styles.rowIcon} />
+            <Text style={styles.rowLabel}>
+              {delivery.model}, №{delivery.number}
+            </Text>
           </View>
         )}
         <Divider />
 
-        {/* Время в пути */}
+        {/* Transit Time */}
         {isEditing ? (
           <TouchableOpacity
             style={styles.row}
@@ -271,7 +270,7 @@ export default function ViewDeliveryScreen() {
                   dispatchTime: dispatchTime.toISOString(),
                   deliveryDate: deliveryDate.toISOString(),
                   deliveryTime: deliveryTime.toISOString(),
-                  returnTo:     returnPath,
+                  returnTo: returnPath,
                   id,
                 },
               })
@@ -302,18 +301,14 @@ export default function ViewDeliveryScreen() {
         )}
         <Divider />
 
-        {/* Дистанция */}
+        {/* Distance */}
         {isEditing ? (
           <TouchableOpacity
             style={styles.row}
             onPress={() =>
               router.push({
                 pathname: '/distance',
-                params: {
-                  distance,
-                  returnTo: returnPath,
-                  returnId: id,
-                },
+                params: { distance, returnTo: returnPath, returnId: id },
               })
             }
           >
@@ -334,15 +329,15 @@ export default function ViewDeliveryScreen() {
         )}
         <Divider />
 
-        {/* Файл-медиа */}
-        <TouchableOpacity style={styles.row} onPress={() => {/* TODO: открыть PDF */}}>
+        {/* Media File */}
+        <TouchableOpacity style={styles.row} onPress={() => {/* TODO: open PDF */}}>
           <Ionicons name="document-attach-outline" size={20} color="#fff" style={styles.rowIcon} />
           <Text style={styles.rowLabel}>{delivery.mediaFile}</Text>
           <Ionicons name="chevron-forward" size={18} color="#fff" />
         </TouchableOpacity>
         <Divider />
 
-        {/* Услуга */}
+        {/* Service */}
         <Text style={styles.sectionLabel}>СТАТУС</Text>
         {isEditing ? (
           <TouchableOpacity
@@ -363,11 +358,9 @@ export default function ViewDeliveryScreen() {
         )}
         <Divider />
 
-        
-
-        {/* Статус */}
+        {/* Delivery Status */}
         {isEditing ? (
-          <TouchableOpacity style={styles.row} onPress={openStatus}>
+          <TouchableOpacity style={styles.row} onPress={() => setStatusSheetOpen(true)}>
             <Ionicons name="reload-outline" size={20} color="#fff" style={styles.rowIcon} />
             <Text style={styles.rowLabel}>Статус доставки</Text>
             <View style={styles.rowContent}>
@@ -390,12 +383,12 @@ export default function ViewDeliveryScreen() {
         )}
         <Divider />
 
-        {/* Упаковка */}
+        {/* Packaging */}
         {isEditing ? (
           <TouchableOpacity
             style={styles.row}
             onPress={() =>
-              router.push({ pathname: '/packaging', params: { returnTo: returnPath, id } })
+              router.push({ pathname: '/packaging', params: { id, returnTo: returnPath } })
             }
           >
             <Ionicons name="cube-outline" size={20} color="#fff" style={styles.rowIcon} />
@@ -410,9 +403,9 @@ export default function ViewDeliveryScreen() {
         )}
         <Divider />
 
-        {/* Тех. состояние */}
+        {/* Tech Condition */}
         {isEditing ? (
-          <TouchableOpacity style={styles.row} onPress={openTech}>
+          <TouchableOpacity style={styles.row} onPress={() => setTechSheetOpen(true)}>
             <Ionicons name="settings-outline" size={20} color="#fff" style={styles.rowIcon} />
             <Text style={styles.rowLabel}>Тех. исправность</Text>
             <View style={styles.rowContent}>
@@ -435,11 +428,10 @@ export default function ViewDeliveryScreen() {
         )}
         <Divider />
 
-
-        {/* Сборщик */}
+        {/* Collector */}
         <Text style={styles.sectionLabel}>СБОРЩИК</Text>
         {isEditing ? (
-          <TouchableOpacity style={styles.row} onPress={openFio}>
+          <TouchableOpacity style={styles.row} onPress={() => setFioSheetOpen(true)}>
             <Ionicons name="person-outline" size={20} color="#fff" style={styles.rowIcon} />
             <Text style={styles.rowLabel}>{collectorName || 'Выбрать ФИО'}</Text>
             <Ionicons name="chevron-forward" size={18} color="#fff" />
@@ -452,9 +444,9 @@ export default function ViewDeliveryScreen() {
         )}
         <Divider />
 
-        {/* Комментарий */}
+        {/* Comment */}
         {isEditing ? (
-          <TouchableOpacity style={styles.row} onPress={openComment}>
+          <TouchableOpacity style={styles.row} onPress={() => setCommentSheetOpen(true)}>
             <Ionicons name="chatbubble-outline" size={20} color="#fff" style={styles.rowIcon} />
             <Text style={styles.rowLabel}>{comment || 'Добавить комментарий'}</Text>
             <Ionicons name="chevron-forward" size={18} color="#fff" />
@@ -468,7 +460,7 @@ export default function ViewDeliveryScreen() {
         <Divider />
       </ScrollView>
 
-      {/* Кнопка */}
+      {/* Footer */}
       <View style={styles.footer}>
         {isEditing ? (
           <View style={styles.footerButtons}>
@@ -481,160 +473,66 @@ export default function ViewDeliveryScreen() {
           </View>
         ) : (
           <TouchableOpacity style={styles.actionBtn} onPress={() => setIsEditing(true)}>
-            <Text style={styles.actionBtnText}>Распровести</Text>
+            <Text style={styles.actionBtnText}>Редактировать</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* ───────── BottomSheets ───────── */}
-      {/* Статус */}
-      <BottomSheet
-        ref={statusRef}
-        index={statusIdx}
-        snapPoints={snap30}
-        onChange={setStatusIdx}
-        enablePanDownToClose
-        backgroundStyle={{ backgroundColor: '#23262B' }}
-        handleIndicatorStyle={{ backgroundColor: '#444' }}
-      >
-        <BottomSheetView style={styles.sheetContent}>
-          <Text style={styles.sheetTitle}>Статус доставки</Text>
-          {STATUS_OPTIONS.map(opt => (
-            <TouchableOpacity
-              key={opt.key}
-              style={styles.statusOption}
-              onPress={() => { setStatus(opt); closeStatus(); }}
-            >
-              <View style={[styles.badgeSmall, { backgroundColor: opt.color }]} />
-              <Text style={[styles.statusLabel, opt.key === status.key && styles.statusSelected]}>
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </BottomSheetView>
-      </BottomSheet>
+      {/* Bottom Sheets */}
+      <CourierSheet
+        models={transportModels}
+        selectedModel={selectedModel}
+        number={number}
+        onModelChange={key => {
+          setSelectedModel(key);
+          const m = transportModels.find(x => x.key === key);
+          if (m) setModelName(m.name);
+        }}
+        onNumberChange={setNumber}
+        isOpen={courierSheetOpen}
+        onClose={() => setCourierSheetOpen(false)}
+      />
 
-      {/* Тех. состояние */}
-      <BottomSheet
-        ref={techRef}
-        index={techIdx}
-        snapPoints={snap30}
-        onChange={setTechIdx}
-        enablePanDownToClose
-        backgroundStyle={{ backgroundColor: '#23262B' }}
-        handleIndicatorStyle={{ backgroundColor: '#444' }}
-      >
-        <BottomSheetView style={styles.sheetContent}>
-          <Text style={styles.sheetTitle}>Тех. исправность</Text>
-          {TECH_OPTIONS.map(opt => (
-            <TouchableOpacity
-              key={opt.key}
-              style={styles.statusOption}
-              onPress={() => { setTech(opt); closeTech(); }}
-            >
-              <View style={[styles.badgeSmall, { backgroundColor: opt.color }]} />
-              <Text style={[styles.statusLabel, opt.key === tech.key && styles.statusSelected]}>
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </BottomSheetView>
-      </BottomSheet>
+      <StatusSheet
+        title="Статус доставки"
+        options={statusOptions}
+        selectedOption={status}
+        onSelect={setStatus}
+        isOpen={statusSheetOpen}
+        onClose={() => setStatusSheetOpen(false)}
+      />
 
-      {/* Модель + номер */}
-      <BottomSheet
-        ref={modelRef}
-        index={modelIdx}
-        snapPoints={snap50}
-        onChange={setModelIdx}
-        enablePanDownToClose
-        backgroundStyle={{ backgroundColor: '#23262B' }}
-        handleIndicatorStyle={{ backgroundColor: '#444' }}
-      >
-        <BottomSheetView style={styles.sheetContent}>
-          <Text style={styles.sheetTitle}>Выберите модель и номер</Text>
-          <View style={styles.modelRow}>
-            {['DX-100', 'EAT-2000', 'NOM-7', 'YUM-42'].map(m => (
-              <TouchableOpacity
-                key={m}
-                style={[styles.modelButton, model === m && styles.modelButtonSelected]}
-                onPress={() => setModel(m)}
-              >
-                <Text style={styles.modelText}>{m}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <Text style={styles.label}>Номер</Text>
-          <TextInput
-            style={styles.input}
-            value={number}
-            onChangeText={setNumber}
-            placeholder="Введите номер"
-            placeholderTextColor="#888"
-          />
-          <TouchableOpacity style={styles.button} onPress={closeModel}>
-            <Text style={styles.buttonText}>Готово</Text>
-          </TouchableOpacity>
-        </BottomSheetView>
-      </BottomSheet>
+      <StatusSheet
+        title="Тех. исправность"
+        options={techOptions}
+        selectedOption={tech}
+        onSelect={setTech}
+        isOpen={techSheetOpen}
+        onClose={() => setTechSheetOpen(false)}
+      />
 
-      {/* ФИО */}
-      <BottomSheet
-        ref={fioRef}
-        index={fioIdx}
-        snapPoints={snap30}
-        onChange={setFioIdx}
-        enablePanDownToClose
-        backgroundStyle={{ backgroundColor: '#23262B' }}
-        handleIndicatorStyle={{ backgroundColor: '#444' }}
-      >
-        <BottomSheetView style={styles.sheetContent}>
-          <Text style={styles.sheetTitle}>Выберите ФИО</Text>
-          <TextInput
-            style={styles.input}
-            value={collectorName}
-            onChangeText={setCollectorName}
-            placeholder="Введите ФИО"
-            placeholderTextColor="#888"
-          />
-          <TouchableOpacity style={styles.button} onPress={closeFio}>
-            <Text style={styles.buttonText}>Готово</Text>
-          </TouchableOpacity>
-        </BottomSheetView>
-      </BottomSheet>
+      <TextInputSheet
+        title="ФИО сборщика"
+        value={collectorName}
+        onValueChange={setCollectorName}
+        isOpen={fioSheetOpen}
+        onClose={() => setFioSheetOpen(false)}
+        placeholder="Введите ФИО"
+      />
 
-      {/* Комментарий */}
-      <BottomSheet
-        ref={commentRef}
-        index={commentIdx}
-        snapPoints={snap40}
-        onChange={setCommentIdx}
-        enablePanDownToClose
-        backgroundStyle={{ backgroundColor: '#23262B' }}
-        handleIndicatorStyle={{ backgroundColor: '#444' }}
-      >
-        <BottomSheetView style={styles.sheetContent}>
-          <Text style={styles.sheetTitle}>Комментарий</Text>
-          <TextInput
-            style={[styles.input, { height: 100 }]}
-            value={comment}
-            onChangeText={setComment}
-            placeholder="Введите комментарий"
-            placeholderTextColor="#888"
-            multiline
-          />
-          <TouchableOpacity style={styles.button} onPress={closeComment}>
-            <Text style={styles.buttonText}>Готово</Text>
-          </TouchableOpacity>
-        </BottomSheetView>
-      </BottomSheet>
+      <TextInputSheet
+        title="Комментарий"
+        value={comment}
+        onValueChange={setComment}
+        isOpen={commentSheetOpen}
+        onClose={() => setCommentSheetOpen(false)}
+        placeholder="Введите комментарий"
+        multiline
+      />
     </View>
   );
 }
 
-/* ──────────────────────────────────────
-   Стили
-   ────────────────────────────────────── */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -642,6 +540,7 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 44 : 24,
   },
   loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { color: '#fff', marginTop: 8 },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -651,6 +550,16 @@ const styles = StyleSheet.create({
   },
   title: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
   scrollContent: { paddingBottom: 160 },
+  divider: { height: 1, backgroundColor: '#2C3036', marginHorizontal: 16 },
+  sectionLabel: {
+    color: '#B2B2B2',
+    fontSize: 13,
+    marginTop: 12,
+    marginBottom: 4,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    paddingHorizontal: 16,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -667,16 +576,6 @@ const styles = StyleSheet.create({
   rowContent: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   pill: { borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
   pillText: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
-  divider: { height: 1, backgroundColor: '#2C3036', marginHorizontal: 16 },
-  sectionLabel: {
-    color: '#B2B2B2',
-    fontSize: 13,
-    marginTop: 12,
-    marginBottom: 4,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-    paddingHorizontal: 16,
-  },
   footer: {
     position: 'absolute',
     left: 0,
@@ -692,58 +591,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionBtnText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-
-  sheetContent: { flex: 1, padding: 16 },
-  sheetTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
-  statusOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
-  statusLabel: { color: '#fff', flex: 1, fontSize: 16 },
-  statusSelected: { fontWeight: 'bold' },
-  badgeSmall: { width: 12, height: 12, borderRadius: 6, marginRight: 8 },
-
-  modelRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 },
-  modelButton: {
-    borderWidth: 1,
-    borderColor: '#35363B',
-    borderRadius: 8,
-    padding: 6,
-    margin: 4,
-  },
-  modelButtonSelected: { backgroundColor: '#35363B' },
-  modelText: { color: '#fff' },
-  label: { color: '#B2B2B2', marginBottom: 8 },
-  input: {
-    backgroundColor: '#35363B',
-    color: '#fff',
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 18,
-    marginBottom: 16,
-  },
-  footerButtons: {
-    flexDirection: 'row',
-    padding: 16,
-    // небольшой отступ между кнопками (RN ≥ 0.71 можно gap: 12)
-  },
-
-  footerButtons: {
-    flexDirection: 'row',
-    padding: 16,
-    // RN ≥ 0.71 можно gap: 12,
-    // на старых версиях используем margin у кнопок
-  },
-
+  footerButtons: { flexDirection: 'row', padding: 16 },
   deleteBtn: {
-    flex: 1,               // ← ширина = 50 %
+    flex: 1,
     backgroundColor: '#D32F2F',
     paddingVertical: 12,
     borderRadius: 8,
-    marginRight: 6,        // «щель» между кнопками
+    marginRight: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   saveBtn: {
-    flex: 1,               // ← вторая половина
+    flex: 1,
     backgroundColor: '#18805B',
     paddingVertical: 12,
     borderRadius: 8,
@@ -751,16 +610,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  btnText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  button: {
-    backgroundColor: '#18805B',
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-  },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  btnText: { color: '#fff', fontWeight: 'bold' },
 });
