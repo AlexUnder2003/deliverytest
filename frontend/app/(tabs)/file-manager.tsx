@@ -2,26 +2,44 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 export default function FileManagerScreen() {
   const router = useRouter();
-  const [files, setFiles] = useState<Array<{ uri: string; name: string }>>([]);
+  // Destructure returnTo, returnId and initial files JSON
+  const { returnTo, returnId, files: filesParam } = useLocalSearchParams<{
+    returnTo?: string;
+    returnId?: string;
+    files?: string;
+  }>();
+
+  // Initialize files state from filesParam
+  const [files, setFiles] = useState<Array<{ uri: string; name: string }>>(() => {
+    if (filesParam) {
+      try {
+        return JSON.parse(filesParam as string);
+      } catch {
+        console.warn('Не удалось распарсить filesParam');
+      }
+    }
+    return [];
+  });
+
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingName, setEditingName] = useState<string>('');
 
-  // Добавление документа из файловой системы
+  // Launch document picker
   const addDocument = async () => {
     try {
       const res = await DocumentPicker.getDocumentAsync({
@@ -29,29 +47,19 @@ export default function FileManagerScreen() {
         copyToCacheDirectory: true,
       });
 
-      // Подробное логирование для отладки
-      console.log('DocumentPicker результат:', JSON.stringify(res));
-
-      // Проверка для новой версии API (массив assets)
-      if (res.type === 'success' && Array.isArray(res.assets) && res.assets.length > 0) {
-        const asset = res.assets[0];
-        console.log('Выбран документ:', asset.name, asset.uri);
-        setFiles(prev => [...prev, { uri: asset.uri, name: asset.name }]);
-      } 
-      // Проверка для старой версии API (без массива assets)
-      else if (res.type === 'success' && res.uri) {
-        console.log('Выбран документ (старый API):', res.name, res.uri);
-        setFiles(prev => [...prev, { uri: res.uri, name: res.name || 'Документ' }]);
-      } 
-      else if (res.type === 'cancel') {
-        console.log('Выбор документа отменен пользователем');
-      } 
-      else {
-        console.warn('Неизвестный результат DocumentPicker:', res);
-        Alert.alert('Ошибка', 'Не удалось выбрать документ.');
+      if (!res.canceled) {
+        if (Array.isArray(res.assets) && res.assets.length > 0) {
+          res.assets.forEach(asset => {
+            const name = asset.name ?? asset.uri.split('/').pop()!;
+            setFiles(prev => [...prev, { uri: asset.uri, name }]);
+          });
+        } else if (res.uri) {
+          const name = res.name ?? res.uri.split('/').pop()!;
+          setFiles(prev => [...prev, { uri: res.uri, name }]);
+        }
       }
     } catch (e) {
-      console.warn('Ошибка при выборе документа:', e);
+      console.warn('Picker error', e);
       Alert.alert('Ошибка', 'Не удалось выбрать документ.');
     }
   };
@@ -73,17 +81,35 @@ export default function FileManagerScreen() {
     setEditingIndex(null);
   };
 
-  const cancelEdit = () => {
-    setEditingIndex(null);
+  const cancelEdit = () => setEditingIndex(null);
+
+  // Return to previous screen with updated files
+  const goBackWithFiles = () => {
+    const target = returnTo || '/(tabs)/create'; // Изменено с '/' на '/(tabs)/create'
+    const params: Record<string, string> = {};
+    params.files = JSON.stringify(files);
+    if (returnId) params.id = returnId;
+
+    // Navigate back using replace to avoid stacking
+    router.replace({
+      pathname: target,
+      params,
+    });
   };
 
   return (
     <View style={styles.container}>
+      {/* Done button */}
+      <TouchableOpacity style={styles.doneBtn} onPress={goBackWithFiles}>
+        <Ionicons name="checkmark" size={24} color="#fff" />
+        <Text style={styles.doneText}>Готово</Text>
+      </TouchableOpacity>
+
       <ScrollView contentContainerStyle={styles.list} style={styles.scroll}>
         {files.map((file, idx) => (
           <View key={idx} style={styles.item}>
             {editingIndex === idx ? (
-              <>
+              <> 
                 <TextInput
                   style={styles.input}
                   value={editingName}
@@ -120,10 +146,7 @@ export default function FileManagerScreen() {
                   <Text style={styles.name}>{file.name}</Text>
                 </TouchableOpacity>
                 <View style={styles.actions}>
-                  <TouchableOpacity
-                    onPress={() => startEditing(idx, file.name)}
-                    style={styles.actionBtn}
-                  >
+                  <TouchableOpacity onPress={() => startEditing(idx, file.name)} style={styles.actionBtn}>
                     <Ionicons name="create-outline" size={20} color="#fff" />
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => deleteFile(idx)} style={styles.actionBtn}>
@@ -135,7 +158,7 @@ export default function FileManagerScreen() {
           </View>
         ))}
 
-        {/* Кнопка выбора документа */}
+        {/* Add document button */}
         <TouchableOpacity style={styles.addBtn} onPress={addDocument}>
           <Ionicons name="add-circle-outline" size={24} color="#fff" />
           <Text style={styles.addBtnText}>Выбрать документ</Text>
@@ -150,6 +173,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#23262B',
     paddingTop: Platform.OS === 'ios' ? 44 : 24,
+  },
+  doneBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  doneText: {
+    color: '#fff',
+    fontSize: 16,
+    marginLeft: 8,
   },
   scroll: { flex: 1 },
   list: {

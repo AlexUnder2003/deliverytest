@@ -54,7 +54,10 @@ export default function CreateDeliveryScreen() {
   const [transportModels, setTransportModels] = useState<TransportModel[]>([]);
   const [statusOptions, setStatusOptions] = useState<StatusOption[]>(FALLBACK_STATUS_OPTIONS);
   const [techOptions, setTechOptions] = useState<StatusOption[]>(FALLBACK_TECH_OPTIONS);
-
+  // Файлы
+  const [attachedFiles, setAttachedFiles] = useState<
+    Array<{ uri: string; name: string }>
+  >([]);
   // Courier
   const [selectedModel, setSelectedModel] = useState('');
   const [selectedModelName, setSelectedModelName] = useState('Выберите модель');
@@ -139,6 +142,16 @@ export default function CreateDeliveryScreen() {
   useEffect(() => {
     if (params.distance) setDistance(params.distance);
   }, [params.distance]);
+
+  useEffect(() => {
+    if (params.files) {
+      try {
+        setAttachedFiles(JSON.parse(params.files));
+      } catch {
+        console.warn('Cannot parse files from params');
+      }
+    }
+  }, [params.files]);
 
   // Calculate transit
   const renderTransit = () => {
@@ -353,11 +366,26 @@ export default function CreateDeliveryScreen() {
         {/* Files */}
         <TouchableOpacity
           style={styles.row}
-          onPress={() => router.push('/file-manager')}
+          onPress={() =>
+            router.push({
+              pathname: '/file-manager',
+              params: {
+                returnTo: router.pathname,
+                files: JSON.stringify(attachedFiles),
+              },
+            })
+          }
         >
-          <Ionicons name="document-attach-outline" size={20} color="#fff" style={styles.rowIcon} />
-          <Text style={styles.rowLabel}>Файлы</Text>
-          <Ionicons name="chevron-forward" size={18} color="#fff" />
+          <Ionicons
+            name="document-attach-outline"
+            size={20}
+            color="#fff"
+            style={styles.rowIcon}
+          />
+          <Text style={styles.rowLabel}>
+            Файлы {attachedFiles.length > 0 ? `(${attachedFiles.length})` : ''}
+          </Text>
+          <Ionicons name="chevron-forward" size={18} color="#fff" />  
         </TouchableOpacity>
         <Divider />
 

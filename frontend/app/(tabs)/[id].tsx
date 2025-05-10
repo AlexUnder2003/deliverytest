@@ -116,6 +116,16 @@ export default function ViewDeliveryScreen() {
     setTech(delivery.tech);
     setCollectorName(delivery.collectorName);
     setComment(delivery.comment);
+    
+    // Инициализация файлов, если они есть в доставке
+    if (delivery.files) {
+      try {
+        setAttachedFiles(JSON.parse(delivery.files));
+      } catch (e) {
+        console.warn('Не удалось распарсить файлы доставки', e);
+        setAttachedFiles([]);
+      }
+    }
   }, [delivery, transportModels]);
 
   // Apply query params overrides
@@ -173,6 +183,7 @@ export default function ViewDeliveryScreen() {
       tech_key: tech.key,
       collector: collectorName,
       comment,
+      files: JSON.stringify(attachedFiles), // Добавляем файлы в данные для сохранения
     };
 
     const success = await deliveryApi.updateDelivery(id, data);
