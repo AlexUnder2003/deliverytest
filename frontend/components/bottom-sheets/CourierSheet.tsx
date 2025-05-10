@@ -27,29 +27,14 @@ const CourierSheet = ({
   const snapPoints = useMemo(() => ['50%'] as const, []);
   const sheetIndex = isOpen ? 0 : -1;
   
-  // Локальные состояния для редактирования
-  const [localModel, setLocalModel] = useState(selectedModel);
-  const [localNumber, setLocalNumber] = useState(number);
-
-  // Применить изменения и закрыть
-  const handleApply = () => {
-    onModelChange(localModel);
-    onNumberChange(localNumber);
-    onClose();
+  // Обработчики изменений, применяющие данные сразу
+  const handleModelChange = (model: string) => {
+    onModelChange(model);
   };
 
-  // Сбросить изменения и закрыть
-  const handleCancel = () => {
-    setLocalModel(selectedModel);
-    setLocalNumber(number);
-    onClose();
+  const handleNumberChange = (value: string) => {
+    onNumberChange(value);
   };
-
-  // Обновляем локальные состояния при изменении пропсов
-  useEffect(() => {
-    setLocalModel(selectedModel);
-    setLocalNumber(number);
-  }, [selectedModel, number]);
 
   return (
     <BottomSheet
@@ -72,9 +57,9 @@ const CourierSheet = ({
               key={model.key}
               style={[
                 styles.modelButton, 
-                localModel === model.key && styles.modelButtonSelected
+                selectedModel === model.key && styles.modelButtonSelected
               ]}
-              onPress={() => setLocalModel(model.key)}
+              onPress={() => handleModelChange(model.key)}
             >
               <Text style={styles.modelText}>{model.name}</Text>
             </TouchableOpacity>
@@ -84,20 +69,11 @@ const CourierSheet = ({
         <Text style={styles.label}>Номер</Text>
         <TextInput
           style={styles.input}
-          value={localNumber}
-          onChangeText={setLocalNumber}
+          value={number}
+          onChangeText={handleNumberChange}
           placeholder="Введите номер"
           placeholderTextColor="#888"
         />
-        
-        <View style={styles.buttonsRow}>
-          <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-            <Text style={styles.cancelButtonText}>Отмена</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
-            <Text style={styles.applyButtonText}>Применить</Text>
-          </TouchableOpacity>
-        </View>
       </BottomSheetView>
     </BottomSheet>
   );
@@ -143,35 +119,7 @@ const styles = StyleSheet.create({
     padding: 10, 
     fontSize: 16, 
     marginBottom: 16 
-  },
-  buttonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16
-  },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: '#35363B',
-    padding: 12,
-    borderRadius: 8,
-    marginRight: 8,
-    alignItems: 'center',
-  },
-  applyButton: {
-    flex: 1,
-    backgroundColor: '#18805B',
-    padding: 12,
-    borderRadius: 8,
-    marginLeft: 8,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: '#fff',
-  },
-  applyButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
+  }
 });
 
 export default CourierSheet;
