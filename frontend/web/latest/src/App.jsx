@@ -2,13 +2,21 @@ import { useState } from 'react'
 import DeliveryReportPage from '../components/DeliveryReport'
 import './App.css'
 
+// Создаем компонент Layout
+const Layout = ({ children }) => {
+  return (
+    <div className="w-full max-w-[1920px] mx-auto px-4">
+      {children}
+    </div>
+  )
+}
+
 function App() {
-  const [count, setCount] = useState(0)
 
   return (
-    <>
+    <Layout>
       <DeliveryReportPage />
-    </>
+    </Layout>
   )
 }
 
