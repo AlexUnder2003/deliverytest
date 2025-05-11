@@ -10,7 +10,8 @@ from api.models import (
     TransportModel,
 )
 from api.serializers import (
-    DeliverySerializer,
+    DeliveryWriteSerializer,
+    DeliveryReadSerializer,
     TechStatusSerializer,
     PackagingTypeSerializer,
     ServiceSerializer,
@@ -22,7 +23,13 @@ from api.serializers import (
 
 class DeliveryViewSet(viewsets.ModelViewSet):
     queryset = Delivery.objects.all()
-    serializer_class = DeliverySerializer
+
+    def get_serializer_class(self):
+        return (
+            DeliveryWriteSerializer
+            if self.action in ("create", "update", "partial_update")
+            else DeliveryReadSerializer
+        )
 
 
 class TechStatusViewSet(viewsets.ModelViewSet):

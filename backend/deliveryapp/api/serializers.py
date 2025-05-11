@@ -47,79 +47,20 @@ class TransportModelSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class DeliverySerializer(serializers.ModelSerializer):
-    # ─── Транспорт ─────────────────────────────────────
+class DeliveryWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Delivery
+        fields = "__all__"
+
+
+class DeliveryReadSerializer(serializers.ModelSerializer):
     transport_model = TransportModelSerializer(read_only=True)
-    transport_model_id = serializers.PrimaryKeyRelatedField(
-        queryset=TransportModel.objects.all(),
-        source="transport_model",
-        write_only=True,
-    )
-
-    # ─── Услуга: ТЕПЕРЬ ОДНА ───────────────────────────
-    service = ServiceSerializer(read_only=True)  # для ответа
-    service_id = serializers.PrimaryKeyRelatedField(  # для входящих данных
-        queryset=Service.objects.all(),
-        source="service",
-        write_only=True,
-        required=False,
-        allow_null=True,
-    )
-
-    # (остальные поля без изменений) ────────────────────
+    service = ServiceSerializer(read_only=True)
     packaging = PackagingTypeSerializer(read_only=True)
-    packaging_id = serializers.PrimaryKeyRelatedField(
-        queryset=PackagingType.objects.all(),
-        source="packaging",
-        write_only=True,
-        required=False,
-        allow_null=True,
-    )
     status = DeliveryStatusSerializer(read_only=True)
-    status_id = serializers.PrimaryKeyRelatedField(
-        queryset=DeliveryStatus.objects.all(), source="status", write_only=True
-    )
     technical_condition = TechStatusSerializer(read_only=True)
-    technical_condition_id = serializers.PrimaryKeyRelatedField(
-        queryset=TechStatus.objects.all(),
-        source="technical_condition",
-        write_only=True,
-    )
+    cargo_type = CargoTypeSerializer(read_only=True)
 
     class Meta:
         model = Delivery
-        fields = [
-            "id",
-            "transport_model",
-            "transport_model_id",
-            "transport_number",
-            "dispatch_datetime",
-            "delivery_datetime",
-            "distance",
-            "service",
-            "service_id",
-            "packaging",
-            "packaging_id",
-            "status",
-            "status_id",
-            "technical_condition",
-            "technical_condition_id",
-            "collector",
-            "comment",
-            "cargo_type",
-            "cargo_type_id",
-            "attachments",
-            "created_at",
-            "updated_at",
-        ]
-        read_only_fields = ("id", "created_at", "updated_at")
-        extra_kwargs = {
-            "dispatch_datetime": {
-                "format": "%Y-%m-%dT%H:%M:%SZ",
-                "input_formats": ["iso-8601"],
-            },
-            "delivery_datetime": {
-                "format": "%Y-%m-%dT%H:%M:%SZ",
-                "input_formats": ["iso-8601"],
-            },
-        }
+        fields = "__all__"
