@@ -165,6 +165,32 @@ export default function ViewDeliveryScreen() {
     return `${Math.floor(mins / 60)}ч ${mins % 60}м`;
   };
 
+  /* ───────── helpers: payload ───────── */
+  const buildPayload = (): Record<string, unknown> => ({
+    /* transport */
+    ...(selectedModel && { transport_model: Number(selectedModel) }),
+    transport_number: number,
+    /* даты / время */
+    dispatch_datetime: new Date(
+      dispatchDate.getFullYear(), dispatchDate.getMonth(), dispatchDate.getDate(),
+      dispatchTime.getHours(),    dispatchTime.getMinutes(),
+    ).toISOString(),
+    delivery_datetime: new Date(
+      deliveryDate.getFullYear(), deliveryDate.getMonth(), deliveryDate.getDate(),
+      deliveryTime.getHours(),    deliveryTime.getMinutes(),
+    ).toISOString(),
+    distance,
+    /* справочники с сервера */
+    ...(serviceId   != null && { service:   serviceId }),
+    ...(packagingId != null && { packaging: packagingId }),
+    /* статус + тех. состояние */
+    status:              status.key,
+    technical_condition: tech.key,
+    /* прочее */
+    collector: collectorName,
+    comment,
+  });
+
   /* ───────── Сохранить ───────── */
   const onSave = async () => {
     if (!id) return;
@@ -172,32 +198,7 @@ export default function ViewDeliveryScreen() {
     if (!status.key)  return Alert.alert('Выберите статус доставки');
     if (!tech.key)    return Alert.alert('Укажите тех. исправность');
 
-    const payload: Record<string, unknown> = {
-      /* transport */
-      ...(selectedModel && { transport_model: Number(selectedModel) }),
-      transport_number: number,
-      /* даты / время */
-      dispatch_datetime: new Date(
-        dispatchDate.getFullYear(), dispatchDate.getMonth(), dispatchDate.getDate(),
-        dispatchTime.getHours(),    dispatchTime.getMinutes(),
-      ).toISOString(),
-      delivery_datetime: new Date(
-        deliveryDate.getFullYear(), deliveryDate.getMonth(), deliveryDate.getDate(),
-        deliveryTime.getHours(),    deliveryTime.getMinutes(),
-      ).toISOString(),
-      distance,
-      /* справочники с сервера */
-      ...(serviceId   != null && { service:   serviceId }),
-      ...(packagingId != null && { packaging: packagingId }),
-      /* статус + тех. состояние — отправляем как пришли */
-      status:              status.key,
-      technical_condition: tech.key,
-      /* остальное */
-      collector: collectorName,
-      comment,
-    };
-
-    const ok = await deliveryApi.updateDelivery(id, payload);
+    const ok = await deliveryApi.updateDelivery(id, buildPayload());
     ok ? Alert.alert('Сохранено') : Alert.alert('Ошибка', 'Не удалось сохранить');
     if (ok) setIsEditing(false);
   };
@@ -205,8 +206,8 @@ export default function ViewDeliveryScreen() {
   /* ───────── Провести ───────── */
   const onFinish = async () => {
     if (!id) return;
-  
-    const ok = await deliveryApi.updateDelivery(id, { finished: true });   // ← только это
+
+    const ok = await deliveryApi.updateDelivery(id, { ...buildPayload(), finished: true });
     ok ? Alert.alert('Проведено') : Alert.alert('Ошибка', 'Не удалось провести');
     if (ok) router.back();
   };
@@ -232,16 +233,24 @@ export default function ViewDeliveryScreen() {
 
   return (
     <View style={styles.container}>
+
       {/* ───── Header ───── */}
       <View style={styles.headerRow}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.title}>№{id}</Text>
-        <View style={{ width: 24 }} />
+        {isEditing ? (
+          <TouchableOpacity onPress={onSave}>
+            <Ionicons name="checkmark-outline" size={24} color="#fff" />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 24 }} />
+        )}
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
+
         {/* ───── Courier ───── */}
         <Text style={styles.sectionLabel}>КУРЬЕР</Text>
         {isEditing ? (
@@ -531,6 +540,7 @@ export default function ViewDeliveryScreen() {
           {isEditing && <Ionicons name="chevron-forward" size={18} color="#fff" />}
         </TouchableOpacity>
         <Divider />
+
       </ScrollView>
 
       {/* ───── Footer ───── */}
@@ -540,20 +550,17 @@ export default function ViewDeliveryScreen() {
             <TouchableOpacity style={styles.deleteBtn} onPress={onDelete}>
               <Text style={styles.btnText}>Удалить</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.saveBtn} onPress={onSave}>
-              <Text style={styles.btnText}>Сохранить</Text>
+            <TouchableOpacity style={styles.postBtn} onPress={onFinish}>
+              <Text style={styles.btnText}>Провести</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.footerButtons}>
-            <TouchableOpacity style={styles.postBtn} onPress={onFinish}>
-              <Text style={styles.btnText}>Провести</Text>
-            </TouchableOpacity>
             <TouchableOpacity
               style={styles.actionBtn}
               onPress={() => setIsEditing(true)}
             >
-              <Text style={styles.btnText}>Редактировать</Text>
+              <Text style={styles.btnText}>Распровести</Text>
             </TouchableOpacity>
           </View>
         )}
