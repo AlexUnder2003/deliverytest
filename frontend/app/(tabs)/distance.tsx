@@ -16,16 +16,12 @@ type Params = {
   from?: string;
   to?: string;
   distance?: string;
-  returnTo?: string;   // ← любой путь
-  returnId?: string;   // нужен, если редактируем существующую доставку
 };
 
 export default function DistanceScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<Params>();
 
-  const [from,      setFrom]      = useState(params.from      ?? '');
-  const [to,        setTo]        = useState(params.to        ?? '');
   const [distance,  setDistance]  = useState(params.distance  ?? '');
 
   // Функция для валидации ввода - только цифры
@@ -42,8 +38,7 @@ export default function DistanceScreen() {
       pathname: targetPath,
       params: {
         ...(params.returnId ? { id: params.returnId } : {}),
-        from,
-        to,
+
         distance,        // ключ должен называться «distance»
       },
     });

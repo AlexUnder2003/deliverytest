@@ -83,15 +83,14 @@ export default function TransitTimeScreen() {
 
   const onSave = () => {
     router.replace({
-      // куда вернуться: либо явный returnTo, либо форма создания
+
       pathname: returnTo ?? '/(tabs)/create',
       params: {
         dispatchDate: dispatchDate.toISOString(),
         dispatchTime: dispatchTime.toISOString(),
         deliveryDate: deliveryDate.toISOString(),
         deliveryTime: deliveryTime.toISOString(),
-        // id передавать не нужно: если вы редактируете,
-        // он уже встроен в самом pathname '/(tabs)/123'
+
       },
     });
   };

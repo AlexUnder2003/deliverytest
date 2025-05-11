@@ -20,13 +20,11 @@ const FALLBACK_ITEMS = [
   { id: 2, key: 'cellophane', title: 'Целофан' },
 ];
 
-/* ─────────────  расчёт ширины карточки ───────────── */
 
 const numColumns  = 2;
 const { width }   = Dimensions.get('window');
 const ITEM_WIDTH  = (width - 16 * 3) / numColumns;
 
-/* ─────────────────────────────────────────────────── */
 
 export default function PackagingScreen() {
   const router = useRouter();

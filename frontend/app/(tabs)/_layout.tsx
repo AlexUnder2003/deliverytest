@@ -68,12 +68,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="file-preview"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
         name="distance"
         options={{
           href: null,

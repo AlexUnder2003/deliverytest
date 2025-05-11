@@ -2,8 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
-
-// Импортируем API
 import { deliveryApi, DeliveryListItem } from '@/services/api';
 
 // Цвета статусов
@@ -19,14 +17,11 @@ export default function DeliveriesScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Загрузка данных при монтировании компонента
-  // В начале файла, где вы получаете параметры
   const params = useLocalSearchParams<{ refresh?: string }>();
   
-  // В useEffect для загрузки данных
   useEffect(() => {
     fetchDeliveries();
-  }, [params.refresh]); // Добавьте params.refresh в зависимости
+  }, [params.refresh]);
   
   // Функция загрузки данных
   const fetchDeliveries = async () => {

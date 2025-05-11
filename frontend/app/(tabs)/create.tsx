@@ -213,10 +213,8 @@ export default function CreateDeliveryScreen() {
         await deliveryApi.createDelivery(payload);
       }
 
-      // Показываем сообщение об успехе без кнопки OK и колбэка
       Alert.alert('Успех', 'Доставка создана');
       
-      // Перенаправляем на главную страницу с параметром refresh
       router.replace({
         pathname: '/(tabs)/',
         params: { refresh: Date.now().toString() }

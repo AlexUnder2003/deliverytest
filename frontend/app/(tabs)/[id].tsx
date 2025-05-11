@@ -1,4 +1,3 @@
-// app/(tabs)/[id]/view.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -24,11 +23,7 @@ import CourierSheet   from '@/components/bottom-sheets/CourierSheet';
 import StatusSheet    from '@/components/bottom-sheets/StatusSheet';
 import TextInputSheet from '@/components/bottom-sheets/TextInputSheet';
 
-/* ──────────────────────────────── */
-
 const Divider = () => <View style={styles.divider} />;
-
-/* ──────────────────────────────── */
 
 export default function ViewDeliveryScreen() {
   const router      = useRouter();
@@ -66,7 +61,6 @@ export default function ViewDeliveryScreen() {
   const [deliveryTime,  setDeliveryTime]  = useState(new Date());
   const [distance,      setDistance]      = useState('');
 
-  /* service / packaging — храним и PK, и название */
   const [serviceId,      setServiceId]      = useState<number | null>(null);
   const [serviceTitle,   setServiceTitle]   = useState('');
   const [packagingId,    setPackagingId]    = useState<number | null>(null);
@@ -122,15 +116,13 @@ export default function ViewDeliveryScreen() {
     setDeliveryTime(new Date(`${delivery.deliveryDate}T${delivery.deliveryTime}`));
     setDistance(delivery.distance);
 
-    /* service / packaging (backend присылает вложенный объект) */
-    // @ts-ignore — тип Delivery.service = string|object
     setServiceId(delivery.service?.id ?? null);
     setServiceTitle(
       typeof delivery.service === 'string'
         ? delivery.service
         : delivery.service?.name ?? '',
     );
-    // @ts-ignore
+
     setPackagingId(delivery.packaging?.id ?? null);
     setPackagingTitle(
       typeof delivery.packaging === 'string'
@@ -144,14 +136,12 @@ export default function ViewDeliveryScreen() {
     setComment(delivery.comment);
   }, [delivery, transportModels]);
 
-  /* ─── overrides из query-params ─── */
   useEffect(() => {
     if (qDistance)    setDistance(qDistance);
     if (qServiceId)   setServiceId(Number(qServiceId));
     if (qPackagingId) setPackagingId(Number(qPackagingId));
   }, [qDistance, qServiceId, qPackagingId]);
 
-  /* ─── helpers ─── */
   const transitLabel = () => {
     const start = new Date(
       dispatchDate.getFullYear(), dispatchDate.getMonth(), dispatchDate.getDate(),
@@ -165,12 +155,9 @@ export default function ViewDeliveryScreen() {
     return `${Math.floor(mins / 60)}ч ${mins % 60}м`;
   };
 
-  /* ───────── helpers: payload ───────── */
   const buildPayload = (): Record<string, unknown> => ({
-    /* transport */
     ...(selectedModel && { transport_model: Number(selectedModel) }),
     transport_number: number,
-    /* даты / время */
     dispatch_datetime: new Date(
       dispatchDate.getFullYear(), dispatchDate.getMonth(), dispatchDate.getDate(),
       dispatchTime.getHours(),    dispatchTime.getMinutes(),
@@ -180,13 +167,10 @@ export default function ViewDeliveryScreen() {
       deliveryTime.getHours(),    deliveryTime.getMinutes(),
     ).toISOString(),
     distance,
-    /* справочники с сервера */
     ...(serviceId   != null && { service:   serviceId }),
     ...(packagingId != null && { packaging: packagingId }),
-    /* статус + тех. состояние */
     status:              status.key,
     technical_condition: tech.key,
-    /* прочее */
     collector: collectorName,
     comment,
   });
