@@ -24,6 +24,8 @@ class Delivery(models.Model):
     )
     transport_number = models.CharField("Номер транспорта", max_length=100)
 
+    finished = models.BooleanField("Завершена", default=False)
+
     # Время отправки и доставки
     dispatch_datetime = models.DateTimeField("Дата и время отправки")
     delivery_datetime = models.DateTimeField("Дата и время доставки")

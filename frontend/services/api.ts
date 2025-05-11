@@ -162,39 +162,36 @@ export const deliveryApi = {
 
   /* 4. детальная доставка */
   async getDeliveryById(id: string): Promise<Delivery> {
-    try {
-      const { data } = await api.get(`/deliveries/${id}/`);
-      const dispatch = new Date(data.dispatch_datetime);
-      const delivery = new Date(data.delivery_datetime);
-
-      return {
-        model:  data.transport_model?.number || 'Неизвестно',
-        number: data.transport_number || '',
-        dispatchDate: dispatch.toISOString().slice(0, 10),
-        dispatchTime: dispatch.toTimeString().slice(0, 5),
-        deliveryDate: delivery.toISOString().slice(0, 10),
-        deliveryTime: delivery.toTimeString().slice(0, 5),
-        distance:   data.distance || '',
-        mediaFile:  data.attachments?.split('/').pop() || 'Нет файла',
-        service:    data.service?.name || '',
-        status:     getStatusByName(data.status?.name || 'В ожидании'),
-        packaging:  data.packaging?.name || '',
-        tech:       getTechStatusByName(data.technical_condition?.name || 'Исправно'),
-        collectorName: data.collector || '',
-        comment:    data.comment || '',
-      };
-    } catch (err) {
-      console.error('getDeliveryById:', err);
-      Alert.alert('Ошибка', 'Не удалось загрузить данные о доставке');
-      return {
-        model: 'Ошибка', number: '',
-        dispatchDate: new Date().toISOString().slice(0,10),
-        dispatchTime: '00:00', deliveryDate: new Date().toISOString().slice(0,10),
-        deliveryTime: '00:00', distance: '', mediaFile: '', service: '',
-        fragile: false, status: STATUS_OPTIONS[0], packaging: '',
-        tech: TECH_OPTIONS[0], collectorName: '', comment: '',
-      };
-    }
+    const { data } = await api.get(`/deliveries/${id}/`);
+  
+    const dispatch = new Date(data.dispatch_datetime);
+    const delivery = new Date(data.delivery_datetime);
+  
+    /* ⬇️  главное: сразу формируем объект с key = id (строкой),
+                   label = человеко-читаемое название,
+                   color  = то, что пришло от бэка (либо дефолт) */
+    const makeOpt = (o?: any): StatusOption => ({
+      key:   String(o?.id ?? ''),
+      label: o?.name  ?? '',
+      color: o?.color ?? '#666',
+    });
+  
+    return {
+      model:  data.transport_model?.number || 'Неизвестно',
+      number: data.transport_number       || '',
+      dispatchDate: dispatch.toISOString().slice(0, 10),
+      dispatchTime: dispatch.toTimeString().slice(0, 5),
+      deliveryDate: delivery.toISOString().slice(0, 10),
+      deliveryTime: delivery.toTimeString().slice(0, 5),
+      distance:   data.distance || '',
+      mediaFile:  data.attachments?.split('/').pop() || 'Нет файла',
+      service:    data.service?.name      || '',
+      status:     makeOpt(data.status),                 // ✔ key = id
+      packaging:  data.packaging?.name    || '',
+      tech:       makeOpt(data.technical_condition),    // ✔ key = id
+      collectorName: data.collector || '',
+      comment:    data.comment  || '',
+    };
   },
 
   /* 5. delete */
