@@ -48,6 +48,7 @@ class TransportModelSerializer(serializers.ModelSerializer):
 
 
 class DeliverySerializer(serializers.ModelSerializer):
+    # ─── Транспорт ─────────────────────────────────────
     transport_model = TransportModelSerializer(read_only=True)
     transport_model_id = serializers.PrimaryKeyRelatedField(
         queryset=TransportModel.objects.all(),
@@ -55,15 +56,17 @@ class DeliverySerializer(serializers.ModelSerializer):
         write_only=True,
     )
 
-    services = ServiceSerializer(many=True, read_only=True)
-    services_ids = serializers.PrimaryKeyRelatedField(
+    # ─── Услуга: ТЕПЕРЬ ОДНА ───────────────────────────
+    service = ServiceSerializer(read_only=True)  # для ответа
+    service_id = serializers.PrimaryKeyRelatedField(  # для входящих данных
         queryset=Service.objects.all(),
-        source="services",
+        source="service",
         write_only=True,
-        many=True,
         required=False,
+        allow_null=True,
     )
 
+    # (остальные поля без изменений) ────────────────────
     packaging = PackagingTypeSerializer(read_only=True)
     packaging_id = serializers.PrimaryKeyRelatedField(
         queryset=PackagingType.objects.all(),
@@ -72,26 +75,15 @@ class DeliverySerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
-
     status = DeliveryStatusSerializer(read_only=True)
     status_id = serializers.PrimaryKeyRelatedField(
         queryset=DeliveryStatus.objects.all(), source="status", write_only=True
     )
-
     technical_condition = TechStatusSerializer(read_only=True)
     technical_condition_id = serializers.PrimaryKeyRelatedField(
         queryset=TechStatus.objects.all(),
         source="technical_condition",
         write_only=True,
-    )
-
-    cargo_type = CargoTypeSerializer(read_only=True)
-    cargo_type_id = serializers.PrimaryKeyRelatedField(
-        queryset=CargoType.objects.all(),
-        source="cargo_type",
-        write_only=True,
-        required=False,
-        allow_null=True,
     )
 
     class Meta:
@@ -104,8 +96,8 @@ class DeliverySerializer(serializers.ModelSerializer):
             "dispatch_datetime",
             "delivery_datetime",
             "distance",
-            "services",
-            "services_ids",
+            "service",
+            "service_id",
             "packaging",
             "packaging_id",
             "status",

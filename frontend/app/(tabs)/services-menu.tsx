@@ -1,5 +1,3 @@
-// app/services-menu.tsx
-
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -15,36 +13,39 @@ import {
 } from 'react-native';
 import { deliveryApi, ServiceItem } from '@/services/api';
 
-// Резервные данные на случай ошибки загрузки
+/* ─────  резервные данные ───── */
+
 const FALLBACK_SERVICES = [
-  { id: 1, key: 'to-client', title: 'До клиента', subtitle: '8 позиций' },
+  { id: 1, key: 'to-client',      title: 'До клиента',               subtitle: '8 позиций' },
   { id: 2, key: 'between-stores', title: 'Перемещение между складами', subtitle: '8 позиций' },
 ];
 
-const numColumns = 2;
-const { width } = Dimensions.get('window');
-const ITEM_WIDTH = (width - 16 * 3) / numColumns;
+/* ─────  расчёт ширины карточки ───── */
+
+const numColumns  = 2;
+const { width }   = Dimensions.get('window');
+const ITEM_WIDTH  = (width - 16 * 3) / numColumns;
+
+/* ───────────────────────────────────── */
 
 export default function ServicesMenuScreen() {
   const router = useRouter();
-  const [services, setServices] = useState<ServiceItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
+
   type Params = {
-    returnTo?: string;     // куда вернуться
-    id?: string;           // если редактируем существующую запись
-    [key: string]: string; // остальные query-параметры
+    returnTo?: string;
+    id?: string;
+    [key: string]: string;
   };
-  
   const params = useLocalSearchParams<Params>();
 
-  // Загрузка данных при монтировании компонента
-  useEffect(() => {
-    fetchServices();
-  }, []);
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState<string | null>(null);
 
-  // Функция для загрузки услуг из API
+  /* ─── загрузка ─── */
+
+  useEffect(() => { fetchServices(); }, []);
+
   const fetchServices = async () => {
     try {
       setLoading(true);
@@ -52,61 +53,45 @@ export default function ServicesMenuScreen() {
       setServices(data);
       setError(null);
     } catch (err) {
-      console.error('Ошибка при загрузке услуг:', err);
-      setError('Не удалось загрузить данные. Пожалуйста, попробуйте позже.');
+      console.error('Ошибка услуг:', err);
+      setError('Не удалось загрузить данные. Показаны резервные варианты.');
       setServices(FALLBACK_SERVICES);
     } finally {
       setLoading(false);
     }
   };
 
+  /* ─── выбор ─── */
+
   const onSelect = (item: ServiceItem) => {
     const { returnTo, id, ...rest } = params;
-  
+
     router.replace({
-      pathname: returnTo ?? '/(tabs)/create', // запасной вариант
+      pathname: returnTo ?? '/(tabs)/create',
       params: {
         ...rest,
-        service: item.title,      // выбранная услуга
+        service:   item.title, // читаемое название
+        serviceId: item.id,    // PK
         ...(id ? { id } : {}),
       },
     });
   };
 
-  // Обработчик нажатия кнопки "назад"
+  /* ─── back ─── */
+
   const handleGoBack = () => {
-    // Отладочный вывод для проверки параметров
-    console.log('Параметры при возврате:', JSON.stringify(params));
-    
-    // Проверяем наличие параметра returnTo
     if (params.returnTo) {
-      // Сохраняем все параметры, кроме returnTo
-      const { returnTo, ...restParams } = params;
-      
-      router.replace({
-        pathname: returnTo,
-        params: restParams,
-      });
-    } else {
-      // Если параметр returnTo отсутствует, явно указываем путь возврата
-      router.replace('/(tabs)/create');
-    }
+      const { returnTo, ...rest } = params;
+      router.replace({ pathname: returnTo, params: rest });
+    } else router.replace('/(tabs)/create');
   };
 
+  /* ─── render ─── */
+
   const renderItem = ({ item }: { item: ServiceItem }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => onSelect(item)}
-    >
+    <TouchableOpacity style={styles.card} onPress={() => onSelect(item)}>
       <Text style={styles.title}>{item.title}</Text>
-      {item.subtitle ? (
-        <Text style={styles.subtitle}>{item.subtitle}</Text>
-      ) : null}
-      {item.withButton ? (
-        <View style={styles.button}>
-          <Text style={styles.buttonText}>Добавить</Text>
-        </View>
-      ) : null}
+      {item.subtitle && <Text style={styles.subtitle}>{item.subtitle}</Text>}
     </TouchableOpacity>
   );
 
@@ -118,9 +103,7 @@ export default function ServicesMenuScreen() {
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Выбор услуги</Text>
-        <TouchableOpacity>
-          <Ionicons name="search" size={20} color="#fff" />
-        </TouchableOpacity>
+        <Ionicons name="search" size={20} color="#fff" />
       </View>
 
       {loading ? (
@@ -139,7 +122,7 @@ export default function ServicesMenuScreen() {
         <FlatList
           data={services}
           renderItem={renderItem}
-          keyExtractor={(item) => item.key}
+          keyExtractor={i => i.key}
           numColumns={numColumns}
           contentContainerStyle={styles.list}
           columnWrapperStyle={styles.row}
@@ -152,87 +135,28 @@ export default function ServicesMenuScreen() {
   );
 }
 
+/* ─────  стили ───── */
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#23262B',
-    paddingTop: Platform.OS === 'ios' ? 44 : 24,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  headerTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  list: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  row: {
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  card: {
-    width: ITEM_WIDTH,
-    backgroundColor: '#2C3036',
-    borderRadius: 8,
-    padding: 12,
-    justifyContent: 'space-between',
-  },
-  title: {
-    color: '#fff',
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  subtitle: {
-    color: '#AAA',
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  button: {
-    marginTop: 12,
-    backgroundColor: '#35363B',
-    paddingVertical: 8,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: '#fff',
-    marginTop: 12,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  errorText: {
-    color: '#ff6b6b',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  retryButton: {
-    backgroundColor: '#35363B',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-  },
-  retryButtonText: {
-    color: '#fff',
-  },
+  container:   { flex: 1, backgroundColor: '#23262B',
+                 paddingTop: Platform.OS === 'ios' ? 44 : 24 },
+  headerRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                 paddingHorizontal: 16, marginBottom: 12 },
+  headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+
+  list:  { padding: 16, paddingBottom: 32 },
+  row:   { justifyContent: 'space-between', marginBottom: 16 },
+
+  card:  { width: ITEM_WIDTH, backgroundColor: '#2C3036',
+           borderRadius: 8, padding: 12, justifyContent: 'space-between' },
+  title:    { color: '#fff', fontSize: 16, marginBottom: 4 },
+  subtitle: { color: '#AAA', fontSize: 12 },
+
+  loadingContainer:{ flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText:     { color: '#fff', marginTop: 12 },
+  errorContainer:  { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
+  errorText:       { color: '#ff6b6b', textAlign: 'center', marginBottom: 16 },
+  retryButton:     { backgroundColor: '#35363B', paddingVertical: 8,
+                     paddingHorizontal: 16, borderRadius: 6 },
+  retryButtonText: { color: '#fff' },
 });

@@ -32,11 +32,12 @@ class Delivery(models.Model):
     distance = models.CharField("Дистанция", max_length=50)
 
     # Услуги (несколько)
-    services = models.ManyToManyField(
+    service = models.ForeignKey(
         Service,
         verbose_name="Услуги",
-        blank=True,
         related_name="deliveries",
+        on_delete=models.SET_NULL,
+        null=True,  # Add this line to fix the error
     )
 
     # Тип упаковки
@@ -45,7 +46,6 @@ class Delivery(models.Model):
         verbose_name="Тип упаковки",
         on_delete=models.SET_NULL,
         null=True,
-        blank=True,
         related_name="deliveries",
     )
 
