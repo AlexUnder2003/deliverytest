@@ -6,7 +6,6 @@ from api.views import (
     PackagingTypeViewSet,
     ServiceViewSet,
     DeliveryStatusViewSet,
-    CargoTypeViewSet,
     TransportModelViewSet,
 )
 
@@ -20,11 +19,10 @@ router.register("services", ServiceViewSet, basename="services")
 router.register(
     "delivery-statuses", DeliveryStatusViewSet, basename="delivery-statuses"
 )
-router.register("cargo-types", CargoTypeViewSet, basename="cargo-types")
 router.register(
     "transport-models", TransportModelViewSet, basename="transport-models"
 )
 
 urlpatterns = [
-    path("", include(router.urls)),
+    path("api/", include(router.urls)),
 ]

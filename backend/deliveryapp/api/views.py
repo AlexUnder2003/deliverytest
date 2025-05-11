@@ -16,7 +16,6 @@ from api.serializers import (
     PackagingTypeSerializer,
     ServiceSerializer,
     DeliveryStatusSerializer,
-    CargoTypeSerializer,
     TransportModelSerializer,
 )
 
@@ -50,11 +49,6 @@ class ServiceViewSet(viewsets.ModelViewSet):
 class DeliveryStatusViewSet(viewsets.ModelViewSet):
     queryset = DeliveryStatus.objects.all()
     serializer_class = DeliveryStatusSerializer
-
-
-class CargoTypeViewSet(viewsets.ModelViewSet):
-    queryset = CargoType.objects.all()
-    serializer_class = CargoTypeSerializer
 
 
 class TransportModelViewSet(viewsets.ModelViewSet):

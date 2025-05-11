@@ -71,16 +71,6 @@ class Delivery(models.Model):
     # Комментарий
     comment = models.TextField("Комментарий", blank=True)
 
-    # Тип груза
-    cargo_type = models.ForeignKey(
-        CargoType,
-        verbose_name="Тип груза",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="deliveries",
-    )
-
     # Вложения (если необходима простая реализация)
     attachments = models.FileField(
         "Вложения",

@@ -6,7 +6,7 @@ import { Alert, Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 
 /* ─────────────  КОНСТАНТЫ  ───────────── */
-export const API_URL = 'http://localhost:8000';
+export const API_URL = 'http://localhost:8000/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -27,7 +27,6 @@ export type Delivery = {
   distance: string;
   mediaFile: string;
   service: string;
-  fragile: boolean;
   status: StatusOption;
   packaging: string;
   tech: StatusOption;
@@ -39,7 +38,6 @@ export type DeliveryListItem = {
   id: string;
   time: string;
   distance: string;
-  fragile: boolean;
   package: string;
   toClient: boolean;
   statuses: string[];
@@ -148,7 +146,6 @@ export const deliveryApi = {
           id: String(item.id),
           time: `${Math.floor(diffMin / 60)}ч ${diffMin % 60}м`,
           distance: item.distance || '2 км',
-          fragile:  item.cargo_type?.name === 'Хрупкий груз',
           package:  item.packaging?.name || 'Пакет до 1 кг',
           toClient: item.service?.name === 'До клиента',
           statuses: [
@@ -180,7 +177,6 @@ export const deliveryApi = {
         distance:   data.distance || '',
         mediaFile:  data.attachments?.split('/').pop() || 'Нет файла',
         service:    data.service?.name || '',
-        fragile:    data.cargo_type?.name === 'Хрупкий груз',
         status:     getStatusByName(data.status?.name || 'В ожидании'),
         packaging:  data.packaging?.name || '',
         tech:       getTechStatusByName(data.technical_condition?.name || 'Исправно'),

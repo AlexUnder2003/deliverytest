@@ -35,12 +35,6 @@ class DeliveryStatusSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class CargoTypeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CargoType
-        fields = "__all__"
-
-
 class TransportModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = TransportModel
@@ -59,7 +53,6 @@ class DeliveryReadSerializer(serializers.ModelSerializer):
     packaging = PackagingTypeSerializer(read_only=True)
     status = DeliveryStatusSerializer(read_only=True)
     technical_condition = TechStatusSerializer(read_only=True)
-    cargo_type = CargoTypeSerializer(read_only=True)
 
     class Meta:
         model = Delivery
