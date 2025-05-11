@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 
@@ -20,19 +20,23 @@ export default function DeliveriesScreen() {
   const [error, setError] = useState<string | null>(null);
 
   // Загрузка данных при монтировании компонента
+  // В начале файла, где вы получаете параметры
+  const params = useLocalSearchParams<{ refresh?: string }>();
+  
+  // В useEffect для загрузки данных
   useEffect(() => {
     fetchDeliveries();
-  }, []);
-
-  // Функция для загрузки доставок из API
+  }, [params.refresh]); // Добавьте params.refresh в зависимости
+  
+  // Функция загрузки данных
   const fetchDeliveries = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const data = await deliveryApi.getDeliveries();
       setDeliveries(data);
-    } catch (err) {
-      console.error('Ошибка при загрузке доставок:', err);
-      setError('Не удалось загрузить данные. Пожалуйста, попробуйте позже.');
+    } catch (error) {
+      console.error('Ошибка при загрузке доставок:', error);
+      setError('Не удалось загрузить доставки');
     } finally {
       setLoading(false);
     }

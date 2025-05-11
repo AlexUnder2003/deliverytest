@@ -213,9 +213,14 @@ export default function CreateDeliveryScreen() {
         await deliveryApi.createDelivery(payload);
       }
 
-      Alert.alert('Успех', 'Доставка создана', [
-        { text: 'OK', onPress: () => router.replace('/(tabs)/') },
-      ]);
+      // Показываем сообщение об успехе без кнопки OK и колбэка
+      Alert.alert('Успех', 'Доставка создана');
+      
+      // Перенаправляем на главную страницу с параметром refresh
+      router.replace({
+        pathname: '/(tabs)/',
+        params: { refresh: Date.now().toString() }
+      });
     } catch (err) {
       console.error(err);
       Alert.alert('Ошибка', 'Не удалось создать доставку');
