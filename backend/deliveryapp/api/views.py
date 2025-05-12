@@ -1,4 +1,11 @@
 from rest_framework import viewsets
+from django_filters import rest_framework as filters
+from django_filters.rest_framework import (
+    DjangoFilterBackend,
+    FilterSet,
+    DateFilter,
+    ModelChoiceFilter,
+)
 
 from delivery.models import Delivery
 from api.models import (
@@ -6,7 +13,6 @@ from api.models import (
     PackagingType,
     Service,
     DeliveryStatus,
-    CargoType,
     TransportModel,
 )
 from api.serializers import (
@@ -20,8 +26,24 @@ from api.serializers import (
 )
 
 
+class DeliveryFilter(filters.FilterSet):
+    start_date = filters.DateFilter(
+        field_name="delivery_datetime", lookup_expr="gte"
+    )
+    end_date = filters.DateFilter(
+        field_name="delivery_datetime", lookup_expr="lte"
+    )
+    service = filters.ModelChoiceFilter(queryset=Service.objects.all())
+
+    class Meta:
+        model = Delivery
+        fields = ["start_date", "end_date", "service"]
+
+
 class DeliveryViewSet(viewsets.ModelViewSet):
     queryset = Delivery.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = DeliveryFilter
 
     def get_serializer_class(self):
         return (

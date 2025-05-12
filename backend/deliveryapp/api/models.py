@@ -37,12 +37,6 @@ class DeliveryStatus(ReferenceBase):
         verbose_name_plural = "Статусы доставки"
 
 
-class CargoType(ReferenceBase):
-    class Meta:
-        verbose_name = "Тип груза"
-        verbose_name_plural = "Типы грузов"
-
-
 class TransportModel(models.Model):
     number = models.CharField("Номер транспорта", max_length=BASE_NAME_LENGTH)
 

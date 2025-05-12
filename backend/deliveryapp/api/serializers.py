@@ -6,7 +6,6 @@ from api.models import (
     PackagingType,
     Service,
     DeliveryStatus,
-    CargoType,
     TransportModel,
 )
 
