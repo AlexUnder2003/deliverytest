@@ -1,5 +1,5 @@
 from rest_framework import viewsets
-from django_filters import rest_framework as filters
+
 from django_filters.rest_framework import (
     DjangoFilterBackend,
     FilterSet,
@@ -26,14 +26,10 @@ from api.serializers import (
 )
 
 
-class DeliveryFilter(filters.FilterSet):
-    start_date = filters.DateFilter(
-        field_name="delivery_datetime", lookup_expr="gte"
-    )
-    end_date = filters.DateFilter(
-        field_name="delivery_datetime", lookup_expr="lte"
-    )
-    service = filters.ModelChoiceFilter(queryset=Service.objects.all())
+class DeliveryFilter(FilterSet):
+    start_date = DateFilter(field_name="delivery_datetime", lookup_expr="gte")
+    end_date = DateFilter(field_name="delivery_datetime", lookup_expr="lte")
+    service = ModelChoiceFilter(queryset=Service.objects.all())
 
     class Meta:
         model = Delivery
