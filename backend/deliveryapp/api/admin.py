@@ -13,15 +13,20 @@ from delivery.models import Delivery
 class DeliveryAdmin(admin.ModelAdmin):
     list_display = (
         "id",
-        "delivery_date",
+        "dispatch_datetime",
         "distance",
         "service",
         "status",
-        "tech_status",
+        "technical_condition",
     )
-    list_filter = ("delivery_date", "service", "status", "tech_status")
-    search_fields = ("id", "transport_model__name")
-    date_hierarchy = "delivery_date"
+    list_filter = (
+        "dispatch_datetime",
+        "service",
+        "status",
+        "technical_condition",
+    )
+    search_fields = ("id", "transport_model__number")
+    date_hierarchy = "dispatch_datetime"
 
 
 @admin.register(TechStatus)
@@ -50,5 +55,5 @@ class DeliveryStatusAdmin(admin.ModelAdmin):
 
 @admin.register(TransportModel)
 class TransportModelAdmin(admin.ModelAdmin):
-    list_display = ("id", "name")
-    search_fields = ("name",)
+    list_display = ("id", "number")
+    search_fields = ("number",)

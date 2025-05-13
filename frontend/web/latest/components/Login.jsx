@@ -12,8 +12,8 @@ import {
   createTheme,
   CircularProgress,
 } from "@mui/material";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { login } from "../services/authService";
 
 /**
  * Компонент страницы авторизации
@@ -47,18 +47,8 @@ const LoginPage = () => {
     setError(null);
 
     try {
-      // Запрос на получение JWT токена
-      const response = await axios.post("http://localhost:8000/jwt/create/", {
-        username,
-        password,
-      });
-
-      // Сохраняем токены в localStorage
-      localStorage.setItem("accessToken", response.data.access);
-      localStorage.setItem("refreshToken", response.data.refresh);
-      
-      // Устанавливаем токен в заголовки для будущих запросов
-      axios.defaults.headers.common["Authorization"] = `Bearer ${response.data.access}`;
+      // Используем функцию login из authService
+      await login(username, password);
       
       // Перенаправляем на страницу отчетов
       navigate("/reports");
