@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import axios from "axios";
 import { CircularProgress, Box } from "@mui/material";
+import apiClient from "../services/apiClient";
 
 /**
  * Компонент для защиты маршрутов, требующих авторизации
@@ -21,12 +21,11 @@ const ProtectedRoute = ({ children }) => {
       }
 
       try {
-        // Устанавливаем токен в заголовки
-        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        // Устанавливаем токен в заголовки через apiClient
+        apiClient.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         
         // Проверяем валидность токена, делая запрос к защищенному эндпоинту
-        // Можно заменить на более подходящий эндпоинт в вашем API
-        await axios.get("http://localhost:8000/api/deliveries/");
+        await apiClient.get("/deliveries/");
         
         setIsAuthenticated(true);
       } catch (error) {
@@ -38,12 +37,12 @@ const ProtectedRoute = ({ children }) => {
           
           if (refreshToken) {
             try {
-              const response = await axios.post("http://localhost:8000/jwt/refresh/", {
+              const response = await apiClient.post("/jwt/refresh/", {
                 refresh: refreshToken
               });
               
               localStorage.setItem("accessToken", response.data.access);
-              axios.defaults.headers.common["Authorization"] = `Bearer ${response.data.access}`;
+              apiClient.defaults.headers.common["Authorization"] = `Bearer ${response.data.access}`;
               
               setIsAuthenticated(true);
             } catch (refreshError) {

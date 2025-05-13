@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8000/api";
+const API_URL = "/api";
 
 // Функция для авторизации пользователя
 export const login = async (username, password) => {
@@ -18,7 +18,7 @@ export const login = async (username, password) => {
   }
   
   return response.data;
-};
+};  
 
 // Функция для выхода из системы
 export const logout = () => {

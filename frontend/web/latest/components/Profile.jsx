@@ -16,8 +16,8 @@ import {
   createTheme,
 } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import apiClient from "../services/apiClient";
 
 /**
  * Компонент страницы профиля пользователя (только для просмотра)
@@ -60,10 +60,10 @@ const ProfilePage = () => {
         }
 
         // Устанавливаем заголовок авторизации
-        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        apiClient.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         
         // Запрос данных пользователя
-        const response = await axios.get("http://localhost:8000/auth/users/me/");
+        const response = await apiClient.get("/auth/users/me/");
         
         setUser(response.data);
       } catch (err) {
@@ -89,7 +89,7 @@ const ProfilePage = () => {
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
-    axios.defaults.headers.common["Authorization"] = "";
+    apiClient.defaults.headers.common["Authorization"] = "";
     navigate("/login");
   };
 
