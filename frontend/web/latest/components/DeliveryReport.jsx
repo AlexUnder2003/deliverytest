@@ -40,8 +40,8 @@ import axios from "axios";
  */
 const DeliveryReportPage = () => {
   // ————————————— State
-  const [startDate, setStartDate] = useState(dayjs("2025-01-01"));
-  const [endDate, setEndDate] = useState(dayjs("2025-01-10"));
+  const [startDate, setStartDate] = useState(dayjs());
+  const [endDate, setEndDate] = useState(dayjs().add(10, 'day'));
   const [deliveryType, setDeliveryType] = useState("all");
   const [deliveries, setDeliveries] = useState([]);
   const [chartData, setChartData] = useState([]);
