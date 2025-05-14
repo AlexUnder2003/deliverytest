@@ -29,19 +29,24 @@
       "expo-router",
       [
         "expo-splash-screen",
-        
         {
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-        
       ],
       "expo-document-picker"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "18ca4112-8e6b-4d2a-b079-52d75bc82aea"
+      }
+    },
+    "owner": "alexunder2003"
   }
 }
