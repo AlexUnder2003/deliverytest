@@ -1,0 +1,213 @@
+[
+    {
+      "model": "delivery.delivery",
+      "pk": 1,
+      "fields": {
+        "transport_model": 1,
+        "transport_number": "ABC-123",
+        "finished": false,
+        "dispatch_datetime": "2025-05-10T09:00:00Z",
+        "delivery_datetime": "2025-05-10T13:00:00Z",
+        "distance": "10 км",
+        "service": 1,
+        "packaging": 2,
+        "status": 1,
+        "technical_condition": 1,
+        "collector": "Иванов И.И.",
+        "comment": "Срочная доставка",
+        "attachments": null,
+        "created_at": "2025-05-10T08:00:00Z",
+        "updated_at": "2025-05-10T08:00:00Z"
+      }
+    },
+    {
+      "model": "delivery.delivery",
+      "pk": 2,
+      "fields": {
+        "transport_model": 2,
+        "transport_number": "XYZ-789",
+        "finished": false,
+        "dispatch_datetime": "2025-05-09T11:00:00Z",
+        "delivery_datetime": "2025-05-09T14:00:00Z",
+        "distance": "25 км",
+        "service": 2,
+        "packaging": 1,
+        "status": 2,
+        "technical_condition": 2,
+        "collector": "Петров П.П.",
+        "comment": "",
+        "attachments": null,
+        "created_at": "2025-05-09T10:45:00Z",
+        "updated_at": "2025-05-09T12:00:00Z"
+      }
+    },
+    {
+      "model": "delivery.delivery",
+      "pk": 3,
+      "fields": {
+        "transport_model": 3,
+        "transport_number": "TRA-456",
+        "finished": true,
+        "dispatch_datetime": "2025-05-08T07:30:00Z",
+        "delivery_datetime": "2025-05-08T11:00:00Z",
+        "distance": "5 км",
+        "service": 3,
+        "packaging": 3,
+        "status": 3,
+        "technical_condition": 2,
+        "collector": "Сидоров С.С.",
+        "comment": "Требовалась упаковка",
+        "attachments": null,
+        "created_at": "2025-05-08T07:00:00Z",
+        "updated_at": "2025-05-08T11:10:00Z"
+      }
+    },
+    {
+      "model": "delivery.delivery",
+      "pk": 4,
+      "fields": {
+        "transport_model": 1,
+        "transport_number": "ABC-124",
+        "finished": false,
+        "dispatch_datetime": "2025-05-11T10:00:00Z",
+        "delivery_datetime": "2025-05-11T15:30:00Z",
+        "distance": "30 км",
+        "service": 1,
+        "packaging": 1,
+        "status": 1,
+        "technical_condition": 3,
+        "collector": "Романов А.А.",
+        "comment": "Транспорт на ремонте",
+        "attachments": null,
+        "created_at": "2025-05-11T09:00:00Z",
+        "updated_at": "2025-05-11T09:05:00Z"
+      }
+    },
+    {
+      "model": "delivery.delivery",
+      "pk": 5,
+      "fields": {
+        "transport_model": 2,
+        "transport_number": "XYZ-790",
+        "finished": true,
+        "dispatch_datetime": "2025-05-05T08:00:00Z",
+        "delivery_datetime": "2025-05-05T12:00:00Z",
+        "distance": "12 км",
+        "service": 2,
+        "packaging": 2,
+        "status": 3,
+        "technical_condition": 1,
+        "collector": "Громов Н.Н.",
+        "comment": "Быстрая доставка",
+        "attachments": null,
+        "created_at": "2025-05-05T07:50:00Z",
+        "updated_at": "2025-05-05T12:01:00Z"
+      }
+    },
+    {
+      "model": "delivery.delivery",
+      "pk": 6,
+      "fields": {
+        "transport_model": 3,
+        "transport_number": "TRA-457",
+        "finished": false,
+        "dispatch_datetime": "2025-05-12T14:00:00Z",
+        "delivery_datetime": "2025-05-12T17:00:00Z",
+        "distance": "18 км",
+        "service": 1,
+        "packaging": 3,
+        "status": 2,
+        "technical_condition": 3,
+        "collector": "Демин Е.Е.",
+        "comment": "Замена транспорта",
+        "attachments": null,
+        "created_at": "2025-05-12T13:00:00Z",
+        "updated_at": "2025-05-12T13:30:00Z"
+      }
+    },
+    {
+      "model": "delivery.delivery",
+      "pk": 7,
+      "fields": {
+        "transport_model": 1,
+        "transport_number": "ABC-125",
+        "finished": false,
+        "dispatch_datetime": "2025-05-13T07:45:00Z",
+        "delivery_datetime": "2025-05-13T10:15:00Z",
+        "distance": "6 км",
+        "service": 3,
+        "packaging": 1,
+        "status": 1,
+        "technical_condition": 2,
+        "collector": "Никитина А.А.",
+        "comment": "",
+        "attachments": null,
+        "created_at": "2025-05-13T07:00:00Z",
+        "updated_at": "2025-05-13T07:45:00Z"
+      }
+    },
+    {
+      "model": "delivery.delivery",
+      "pk": 8,
+      "fields": {
+        "transport_model": 2,
+        "transport_number": "XYZ-791",
+        "finished": true,
+        "dispatch_datetime": "2025-05-06T06:30:00Z",
+        "delivery_datetime": "2025-05-06T10:00:00Z",
+        "distance": "9 км",
+        "service": 2,
+        "packaging": 2,
+        "status": 3,
+        "technical_condition": 1,
+        "collector": "Шевченко И.И.",
+        "comment": "Нужны были документы",
+        "attachments": null,
+        "created_at": "2025-05-06T06:00:00Z",
+        "updated_at": "2025-05-06T10:10:00Z"
+      }
+    },
+    {
+      "model": "delivery.delivery",
+      "pk": 9,
+      "fields": {
+        "transport_model": 3,
+        "transport_number": "TRA-458",
+        "finished": false,
+        "dispatch_datetime": "2025-05-14T10:00:00Z",
+        "delivery_datetime": "2025-05-14T13:00:00Z",
+        "distance": "22 км",
+        "service": 1,
+        "packaging": 3,
+        "status": 2,
+        "technical_condition": 2,
+        "collector": "Матвеев С.С.",
+        "comment": "Задержка в пути",
+        "attachments": null,
+        "created_at": "2025-05-14T09:00:00Z",
+        "updated_at": "2025-05-14T10:00:00Z"
+      }
+    },
+    {
+      "model": "delivery.delivery",
+      "pk": 10,
+      "fields": {
+        "transport_model": 1,
+        "transport_number": "ABC-126",
+        "finished": true,
+        "dispatch_datetime": "2025-05-01T08:00:00Z",
+        "delivery_datetime": "2025-05-01T10:00:00Z",
+        "distance": "4 км",
+        "service": 3,
+        "packaging": 1,
+        "status": 3,
+        "technical_condition": 1,
+        "collector": "Васильев А.В.",
+        "comment": "Без замечаний",
+        "attachments": null,
+        "created_at": "2025-05-01T07:30:00Z",
+        "updated_at": "2025-05-01T10:05:00Z"
+      }
+    }
+  ]
+  

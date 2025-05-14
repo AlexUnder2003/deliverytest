@@ -7,7 +7,7 @@ DB_HOST=db
 DB_PORT=5432
 
 # Настройки Django
-SECRET_KEY=django-insecure-@&i!7s91d)kyo^vrr0rd7jwp4%xz&r$ffx%+utf=!4+$qw^rf6
+SECRET_KEY=verysecretkey
 DEBUG=False
 
 DB_TYPE=postgres

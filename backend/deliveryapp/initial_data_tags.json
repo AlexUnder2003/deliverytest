@@ -84,27 +84,6 @@
       }
     },
     {
-      "model": "api.cargotype",
-      "pk": 1,
-      "fields": {
-        "name": "Опасный груз"
-      }
-    },
-    {
-      "model": "api.cargotype",
-      "pk": 2,
-      "fields": {
-        "name": "Сыпучий груз"
-      }
-    },
-    {
-      "model": "api.cargotype",
-      "pk": 3,
-      "fields": {
-        "name": "Жидкость"
-      }
-    },
-    {
       "model": "api.transportmodel",
       "pk": 1,
       "fields": {
