@@ -6,7 +6,7 @@ import { Alert, Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 
 /* ─────────────  КОНСТАНТЫ  ───────────── */
-export const API_URL = 'http://80.242.56.74:80/api';
+export const API_URL = 'http://80.242.56.74/api';
 
 const api = axios.create({
   baseURL: API_URL,
