@@ -46,7 +46,7 @@ pip install -r requirements.txt
 
 ```
 DB_ENGINE=django.db.backends.sqlite3
-DB_NAME=db.sqlite3
+DB_NAME=sqlite
 SECRET_KEY=your-secret-key
 DEBUG=True
 ```
